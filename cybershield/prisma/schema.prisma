@@ -1,0 +1,305 @@
+// CyberShield — Single source of truth for the data model
+// Covers all 11 entities used across simulations, training, campaigns,
+// assessments, certificates, audit, tips, and notifications.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum SimulationType {
+  EMAIL
+  SMS
+  LOGIN_PAGE
+  TEAMS_MESSAGE
+}
+
+enum SimulationDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum InteractionAction {
+  CLICKED_LINK
+  SUBMITTED_CREDENTIALS
+  REPORTED
+  IGNORED
+  OPENED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum NotificationKind {
+  TRAINING_ASSIGNED
+  TRAINING_OVERDUE
+  SIM_REMEDIATION
+  CERT_ISSUED
+  NEW_HIRE_WELCOME
+  TIP_OF_THE_DAY
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  name          String
+  passwordHash  String
+  role          Role       @default(EMPLOYEE)
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  isNewHire     Boolean    @default(false)
+  hiredAt       DateTime?
+  riskScore     Int        @default(0)     // 0–100 rolling risk score
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+
+  enrollments        Enrollment[]
+  interactions       SimulationInteraction[]
+  assessmentAttempts AssessmentAttempt[]
+  certificates       Certificate[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  users       User[]
+  campaignTargets CampaignTarget[]
+}
+
+// ─── Training ─────────────────────────────────────────────────────────────────
+
+model Course {
+  id            String       @id @default(cuid())
+  title         String
+  description   String
+  status        CourseStatus @default(DRAFT)
+  isMandatory   Boolean      @default(false)
+  passMark      Int          @default(80) // percent
+  estimatedMin  Int          @default(20)
+  thumbnailUrl  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  modules       Module[]
+  enrollments   Enrollment[]
+  assessments   Assessment[]
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  orderIndex  Int
+  lessons     Lesson[]
+}
+
+model Lesson {
+  id            String   @id @default(cuid())
+  moduleId      String
+  module        Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title         String
+  content       String   // markdown body
+  videoUrl      String?
+  orderIndex    Int
+  durationMin   Int      @default(5)
+  completions   LessonCompletion[]
+}
+
+model LessonCompletion {
+  id           String     @id @default(cuid())
+  lessonId     String
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  completedAt  DateTime   @default(now())
+  @@unique([lessonId, enrollmentId])
+}
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status       EnrollmentStatus @default(ENROLLED)
+  progressPct  Int              @default(0)
+  assignedAt   DateTime         @default(now())
+  dueAt        DateTime?
+  completedAt  DateTime?
+  lessonCompletions LessonCompletion[]
+  @@unique([userId, courseId])
+}
+
+// ─── Assessments & Certificates ──────────────────────────────────────────────
+
+model Assessment {
+  id          String              @id @default(cuid())
+  courseId    String
+  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  passMark    Int                 @default(80)
+  shuffleQs   Boolean             @default(true)
+  questions   AssessmentQuestion[]
+  attempts    AssessmentAttempt[]
+}
+
+model AssessmentQuestion {
+  id              String     @id @default(cuid())
+  assessmentId    String
+  assessment      Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  text            String
+  options         Json       // [{id, text}]
+  correctOptionId String
+  explanation     String
+  orderIndex      Int
+  aiGenerated     Boolean    @default(false)
+}
+
+model AssessmentAttempt {
+  id            String     @id @default(cuid())
+  assessmentId  String
+  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scorePct      Int
+  passed        Boolean
+  answers       Json       // [{questionId, selectedOptionId, correct}]
+  submittedAt   DateTime   @default(now())
+  certificate   Certificate?
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptId   String   @unique
+  attempt     AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  courseTitle String
+  issuedAt    DateTime @default(now())
+  pdfPath     String?  // server filesystem path
+  verifyCode  String   @unique
+}
+
+// ─── Simulations & Campaigns ─────────────────────────────────────────────────
+
+model SimulationTemplate {
+  id           String               @id @default(cuid())
+  name         String
+  type         SimulationType
+  difficulty   SimulationDifficulty @default(MEDIUM)
+  attackTactic String               // "credential_harvest", "urgency", "authority", etc.
+  payload      Json                 // subject/body/sender/sms_text/login_brand etc.
+  redFlags     Json                 // string[] of warning signs to surface post-action
+  aiGenerated  Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+  campaigns    Campaign[]
+}
+
+model Campaign {
+  id           String         @id @default(cuid())
+  name         String
+  templateId   String
+  template     SimulationTemplate @relation(fields: [templateId], references: [id])
+  status       CampaignStatus @default(DRAFT)
+  scheduledAt  DateTime
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  targets      CampaignTarget[]
+  interactions SimulationInteraction[]
+}
+
+model CampaignTarget {
+  id           String     @id @default(cuid())
+  campaignId   String
+  campaign     Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  // Either by department, role, or all
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  role         Role?
+  allUsers     Boolean    @default(false)
+}
+
+model SimulationInteraction {
+  id          String            @id @default(cuid())
+  campaignId  String
+  campaign    Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      InteractionAction
+  metadata    Json?             // {timeToAction, redFlagsSeen, etc.}
+  occurredAt  DateTime          @default(now())
+  @@index([userId, campaignId])
+}
+
+// ─── Tips, Notifications & Audit ─────────────────────────────────────────────
+
+model SecurityTip {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  category  String   // "password", "phishing", "mobile", etc.
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime          @default(now())
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   // "USER_CREATE", "CAMPAIGN_LAUNCH", etc.
+  entity    String   // model name
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+}
