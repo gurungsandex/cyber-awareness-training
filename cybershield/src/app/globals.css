@@ -4,18 +4,20 @@
 
 @layer base {
   :root {
-    --canvas: #0D1117;
-    --surface: #161B22;
-    --elevated: #1C2128;
-    --border: #30363D;
-    --text-primary: #E6EDF3;
-    --text-secondary: #8B949E;
-    --text-muted: #484F58;
-    --accent: #00B4D8;
-    --accent-hover: #0096B7;
-    --success: #3FB950;
-    --warning: #D29922;
-    --danger: #F85149;
+    --canvas: #EFECE6;
+    --surface: #FFFFFF;
+    --elevated: #F7F5F1;
+    --border: #E3DDD5;
+    --sidebar-bg: #1E3228;
+    --sidebar-active: #2C4A37;
+    --text-primary: #1A1917;
+    --text-secondary: #5C5954;
+    --text-muted: #9C9890;
+    --accent: #2E5E3E;
+    --accent-hover: #254E34;
+    --success: #2D7A3C;
+    --warning: #B45309;
+    --danger: #C0392B;
   }
 
   *, *::before, *::after {
@@ -23,7 +25,7 @@
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
@@ -41,19 +43,18 @@
   h2 { @apply text-2xl font-semibold; }
   h3 { @apply text-xl font-semibold; }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-track { background: var(--elevated); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  ::-webkit-scrollbar-thumb:hover { background: #C8C3BA; }
 }
 
 @layer components {
   .card {
-    @apply rounded-card border border-border bg-surface;
+    @apply rounded-card border border-border bg-surface shadow-card;
   }
   .card-elevated {
-    @apply rounded-card border border-border bg-elevated;
+    @apply rounded-card border border-border bg-elevated shadow-card;
   }
   .stat-card {
     @apply card p-5 flex flex-col gap-2;

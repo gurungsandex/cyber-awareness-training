@@ -46,28 +46,35 @@ export default async function EmployeeDashboard() {
     { label: "Notifications", value: unreadNotifs, icon: Bell, color: "text-accent", bg: "bg-accent/10", href: "/employee/notifications" },
   ];
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+
   return (
     <div className="p-6 space-y-6">
-      {/* Motivational Banner */}
-      <div className="rounded-card border border-accent/20 bg-gradient-to-r from-accent/10 to-transparent p-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-heading font-bold text-text-primary">
-            Welcome back, {firstName} 👋
+      {/* Welcome Banner */}
+      <div className="rounded-card border border-border bg-surface shadow-card p-6 flex items-center justify-between overflow-hidden relative">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(46,94,62,0.04) 0%, transparent 60%)" }} />
+        <div className="relative">
+          <p className="text-text-muted text-sm mb-1">{greeting}</p>
+          <h1 className="text-2xl font-heading font-bold text-text-primary">
+            {firstName}
           </h1>
-          <p className="text-text-secondary text-sm mt-0.5">
+          <p className="text-text-secondary text-sm mt-1">
             {overdueCount > 0
               ? `You have ${overdueCount} overdue training${overdueCount > 1 ? "s" : ""}. Let's get caught up!`
               : "You're on track with your security training. Keep it up!"}
           </p>
         </div>
-        <Shield className="h-12 w-12 text-accent/30 hidden sm:block" />
+        <div className="hidden sm:flex items-center justify-center w-16 h-16 rounded-2xl flex-shrink-0" style={{ backgroundColor: "rgba(46,94,62,0.08)" }}>
+          <Shield className="h-8 w-8" style={{ color: "var(--accent)" }} />
+        </div>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickStats.map((s) => (
           <Link key={s.label} href={s.href}>
-            <div className="card p-4 flex items-center gap-3 hover:border-accent/30 transition-colors cursor-pointer">
+            <div className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
               <div className={`p-2.5 rounded-lg ${s.bg} flex-shrink-0`}>
                 <s.icon className={`h-5 w-5 ${s.color}`} />
               </div>
@@ -99,16 +106,16 @@ export default async function EmployeeDashboard() {
               enrollments.map((e) => {
                 const isOverdue = e.dueAt && new Date(e.dueAt) < new Date() && e.status !== "COMPLETED";
                 return (
-                  <div key={e.id} className="flex items-center justify-between rounded-lg border border-border bg-elevated p-3 hover:border-accent/30 transition-colors">
+                  <div key={e.id} className="flex items-center justify-between rounded-lg border border-border bg-elevated p-3 hover:border-accent/30 hover:shadow-sm transition-all">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm text-text-primary truncate">{e.course.title}</p>
                         {isOverdue && <AlertTriangle className="h-3.5 w-3.5 text-danger flex-shrink-0" />}
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex-1 h-1 bg-border rounded-full max-w-36">
+                        <div className="flex-1 h-1.5 bg-border rounded-full max-w-36">
                           <div
-                            className="h-1 bg-accent rounded-full transition-all"
+                            className="h-1.5 bg-accent rounded-full transition-all"
                             style={{ width: `${e.progressPct}%` }}
                           />
                         </div>
@@ -150,7 +157,7 @@ export default async function EmployeeDashboard() {
 
           {/* Sim Inbox Teaser */}
           <Link href="/employee/inbox">
-            <div className="card p-4 flex items-center gap-3 hover:border-accent/30 transition-colors cursor-pointer">
+            <div className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
               <div className="p-2.5 rounded-lg bg-warning/10 flex-shrink-0">
                 <Inbox className="h-5 w-5 text-warning" />
               </div>
@@ -167,7 +174,7 @@ export default async function EmployeeDashboard() {
           {tip && (
             <div className="card border-accent/20 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-accent" />
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                 <span className="text-xs font-medium text-accent uppercase tracking-wide">Security Tip</span>
               </div>
               <p className="text-sm font-medium text-text-primary mb-1">{tip.title}</p>

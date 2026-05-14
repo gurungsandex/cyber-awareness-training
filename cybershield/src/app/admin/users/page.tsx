@@ -22,15 +22,15 @@ export default async function UsersPage() {
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-        <p className="text-gray-500 mt-1">{users.length} users registered.</p>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-heading font-bold text-text-primary">Users</h1>
+        <p className="text-text-secondary text-sm mt-1">{users.length} users registered.</p>
       </div>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-brand-600" />
+            <Users className="h-5 w-5 text-accent" />
             All Users
           </CardTitle>
         </CardHeader>
@@ -38,30 +38,30 @@ export default async function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-3 pr-4 font-medium text-gray-500">Name</th>
-                  <th className="text-left py-3 pr-4 font-medium text-gray-500">Email</th>
-                  <th className="text-left py-3 pr-4 font-medium text-gray-500">Role</th>
-                  <th className="text-left py-3 pr-4 font-medium text-gray-500">Department</th>
-                  <th className="text-left py-3 pr-4 font-medium text-gray-500">Risk Score</th>
-                  <th className="text-left py-3 font-medium text-gray-500">Joined</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Name</th>
+                  <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Email</th>
+                  <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Role</th>
+                  <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Department</th>
+                  <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Risk Score</th>
+                  <th className="text-left py-3 text-xs font-medium text-text-muted uppercase tracking-wide">Joined</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-border">
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50">
-                    <td className="py-3 pr-4 font-medium text-gray-900">{u.name}</td>
-                    <td className="py-3 pr-4 text-gray-500">{u.email}</td>
+                  <tr key={u.id} className="hover:bg-elevated/50 transition-colors">
+                    <td className="py-3 pr-4 font-medium text-text-primary">{u.name}</td>
+                    <td className="py-3 pr-4 text-text-secondary">{u.email}</td>
                     <td className="py-3 pr-4">
                       <Badge variant={roleVariant(u.role)}>{u.role}</Badge>
                     </td>
-                    <td className="py-3 pr-4 text-gray-500">{u.department?.name ?? "—"}</td>
+                    <td className="py-3 pr-4 text-text-muted">{u.department?.name ?? "—"}</td>
                     <td className="py-3 pr-4">
-                      <span className={`font-semibold ${u.riskScore >= 70 ? "text-red-600" : u.riskScore >= 40 ? "text-yellow-600" : "text-green-600"}`}>
+                      <span className={`font-semibold ${u.riskScore >= 70 ? "text-danger" : u.riskScore >= 40 ? "text-warning" : "text-success"}`}>
                         {u.riskScore}
                       </span>
                     </td>
-                    <td className="py-3 text-gray-400">{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3 text-text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

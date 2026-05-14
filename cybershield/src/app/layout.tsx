@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`h-full dark ${sora.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`h-full ${sora.variable} ${dmSans.variable}`}>
       <body className="h-full antialiased bg-canvas text-text-primary font-sans">
         {children}
       </body>

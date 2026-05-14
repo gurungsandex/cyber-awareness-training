@@ -13,16 +13,20 @@ interface NavItem {
 
 export function Sidebar({ items, userName, userRole }: { items: NavItem[]; userName: string; userRole: string }) {
   const pathname = usePathname();
+  const initials = userName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+
   return (
-    <aside className="flex h-full w-60 flex-col bg-surface border-r border-border">
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/10">
-          <Shield className="h-5 w-5 text-accent" />
+    <aside className="flex h-full w-60 flex-col" style={{ backgroundColor: "var(--sidebar-bg)" }}>
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-5 py-[18px]" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
+          <Shield className="h-4 w-4 text-white" />
         </div>
-        <span className="text-base font-heading font-bold text-text-primary tracking-tight">CyberShield</span>
+        <span className="text-base font-heading font-bold text-white tracking-tight">CyberShield</span>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -32,11 +36,11 @@ export function Sidebar({ items, userName, userRole }: { items: NavItem[]; userN
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-accent/10 text-accent"
-                  : "text-text-secondary hover:bg-elevated hover:text-text-primary"
+                  ? "bg-white/15 text-white"
+                  : "text-white/60 hover:bg-white/8 hover:text-white/90"
               )}
             >
-              <span className={cn("h-4 w-4 flex-shrink-0", active ? "text-accent" : "text-text-muted")}>
+              <span className={cn("h-4 w-4 flex-shrink-0", active ? "text-white" : "text-white/50")}>
                 {item.icon}
               </span>
               {item.label}
@@ -45,14 +49,20 @@ export function Sidebar({ items, userName, userRole }: { items: NavItem[]; userN
         })}
       </nav>
 
-      <div className="border-t border-border px-2 py-3">
-        <div className="mb-1 px-3 py-1.5">
-          <p className="text-sm font-medium text-text-primary truncate">{userName}</p>
-          <p className="text-xs text-text-muted capitalize">{userRole.toLowerCase()}</p>
+      {/* User footer */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }} className="px-3 py-4">
+        <div className="flex items-center gap-3 px-2 py-2 mb-1">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            <span className="text-xs font-semibold text-white">{initials}</span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">{userName}</p>
+            <p className="text-xs text-white/50 capitalize">{userRole.toLowerCase()}</p>
+          </div>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary hover:bg-elevated hover:text-text-primary transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/50 hover:bg-white/8 hover:text-white/90 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Sign out

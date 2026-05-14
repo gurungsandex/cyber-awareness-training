@@ -33,8 +33,8 @@ export function LoginForm() {
     <div className="w-full max-w-md">
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
-        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 mb-4">
-          <Shield className="w-9 h-9 text-accent" />
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl mb-4" style={{ backgroundColor: "var(--sidebar-bg)" }}>
+          <Shield className="w-7 h-7 text-white" />
         </div>
         <h1 className="text-3xl font-heading font-bold text-text-primary">CyberShield</h1>
         <p className="text-text-muted mt-1 text-sm">Security Awareness Platform</p>

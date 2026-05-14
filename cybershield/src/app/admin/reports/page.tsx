@@ -26,10 +26,10 @@ export default async function ReportsPage() {
   ]);
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <p className="text-gray-500 mt-1">Platform analytics and security metrics.</p>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-heading font-bold text-text-primary">Reports</h1>
+        <p className="text-text-secondary text-sm mt-1">Platform analytics and security metrics.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -37,7 +37,7 @@ export default async function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-brand-600" />
+              <BarChart3 className="h-5 w-5 text-accent" />
               Department Overview
             </CardTitle>
           </CardHeader>
@@ -52,14 +52,14 @@ export default async function ReportsPage() {
                 const rate = allEnrollments.length > 0 ? Math.round((completed / allEnrollments.length) * 100) : 0;
                 return (
                   <div key={dept.id}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{dept.name}</span>
-                      <span className="text-xs text-gray-400">{totalUsers} users · Risk: {avgRisk}</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-medium text-text-primary">{dept.name}</span>
+                      <span className="text-xs text-text-muted">{totalUsers} users · Risk: {avgRisk}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full">
-                      <div className="h-2 bg-brand-500 rounded-full" style={{ width: `${rate}%` }} />
+                    <div className="h-1.5 bg-border rounded-full">
+                      <div className="h-1.5 bg-accent rounded-full transition-all" style={{ width: `${rate}%` }} />
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">{rate}% completion</p>
+                    <p className="text-xs text-text-muted mt-0.5">{rate}% completion</p>
                   </div>
                 );
               })}
@@ -71,19 +71,19 @@ export default async function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-brand-600" />
+              <TrendingUp className="h-5 w-5 text-accent" />
               Simulation Interactions
             </CardTitle>
           </CardHeader>
           <CardContent>
             {interactionStats.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">No simulation data yet.</p>
+              <p className="text-sm text-text-muted py-4 text-center">No simulation data yet.</p>
             ) : (
               <div className="space-y-3">
                 {interactionStats.map((s) => (
-                  <div key={s.action} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700 capitalize">{s.action.replace(/_/g, " ").toLowerCase()}</span>
-                    <span className="font-semibold text-gray-900">{s._count.action}</span>
+                  <div key={s.action} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <span className="text-sm text-text-secondary capitalize">{s.action.replace(/_/g, " ").toLowerCase()}</span>
+                    <span className="font-semibold text-text-primary">{s._count.action}</span>
                   </div>
                 ))}
               </div>

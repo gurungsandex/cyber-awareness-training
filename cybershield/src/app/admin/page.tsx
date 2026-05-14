@@ -53,14 +53,14 @@ export default async function AdminDashboard() {
     { label: "Total Employees", value: totalUsers, icon: Users, color: "text-accent", bg: "bg-accent/10" },
     { label: "Active Courses", value: totalCourses, icon: BookOpen, color: "text-success", bg: "bg-success/10" },
     { label: "Completion Rate", value: `${completionRate}%`, icon: TrendingUp, color: "text-warning", bg: "bg-warning/10" },
-    { label: "Overdue Enrollments", value: overdue, icon: AlertTriangle, color: "text-danger", bg: "bg-danger/10" },
+    { label: "Overdue", value: overdue, icon: AlertTriangle, color: "text-danger", bg: "bg-danger/10" },
   ];
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-heading font-bold text-text-primary">Admin Dashboard</h1>
-        <p className="text-text-secondary text-sm mt-1">Platform overview — security posture at a glance.</p>
+        <h1 className="text-2xl font-heading font-bold text-text-primary">Admin Overview</h1>
+        <p className="text-text-secondary text-sm mt-1">Security posture across your organisation.</p>
       </div>
 
       {/* Stat Cards */}
@@ -137,7 +137,7 @@ export default async function AdminDashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Activity className="h-4 w-4 text-text-secondary" />
+            <Activity className="h-4 w-4 text-text-muted" />
             Recent Activity
           </CardTitle>
           <Link href="/admin/audit" className="text-xs text-accent hover:underline">

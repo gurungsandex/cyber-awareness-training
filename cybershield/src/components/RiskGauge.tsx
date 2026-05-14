@@ -6,9 +6,9 @@ interface Props {
 }
 
 function riskColor(score: number) {
-  if (score <= 30) return "#3FB950";
-  if (score <= 60) return "#D29922";
-  return "#F85149";
+  if (score <= 30) return "#2D7A3C";
+  if (score <= 60) return "#B45309";
+  return "#C0392B";
 }
 
 function riskLabel(score: number) {
@@ -24,10 +24,9 @@ export function RiskGauge({ score, size = 160 }: Props) {
   const r = (size / 2) * 0.78;
   const strokeWidth = size * 0.1;
 
-  // Semicircle from 180° to 0° (left to right)
   const startAngle = Math.PI;
   const endAngle = 0;
-  const totalArc = Math.PI; // 180 degrees
+  const totalArc = Math.PI;
 
   const toCoords = (angle: number) => ({
     x: cx + r * Math.cos(angle),
@@ -50,7 +49,7 @@ export function RiskGauge({ score, size = 160 }: Props) {
         <path
           d={`M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 0 1 ${bgEnd.x} ${bgEnd.y}`}
           fill="none"
-          stroke="#30363D"
+          stroke="#E3DDD5"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
@@ -62,7 +61,6 @@ export function RiskGauge({ score, size = 160 }: Props) {
             stroke={color}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
-            style={{ filter: `drop-shadow(0 0 6px ${color}66)` }}
           />
         )}
         {/* Score text */}
@@ -81,7 +79,7 @@ export function RiskGauge({ score, size = 160 }: Props) {
           x={cx}
           y={cy * 1.05}
           textAnchor="middle"
-          fill="#8B949E"
+          fill="#9C9890"
           fontSize={size * 0.09}
           fontFamily="var(--font-dm-sans)"
         >
