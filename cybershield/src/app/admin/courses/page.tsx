@@ -3,8 +3,29 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Clock, Users, FileQuestion, Layers, CheckCircle2 } from "lucide-react";
+import { BookOpen, Clock, Users, FileQuestion, Layers, CheckCircle2, RefreshCw, ShieldCheck, Plus } from "lucide-react";
 import { AssignCourseButton } from "./AssignCourseButton";
+import Link from "next/link";
+
+const FRAMEWORK_COLORS: Record<string, string> = {
+  GDPR: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  HIPAA: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  PCI_DSS: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  SOC2: "bg-green-500/10 text-green-400 border-green-500/20",
+  NIST_CSF: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  ISO_27001: "bg-red-500/10 text-red-400 border-red-500/20",
+  CIS_CONTROLS: "bg-pink-500/10 text-pink-400 border-pink-500/20",
+  GENERAL: "bg-text-muted/10 text-text-muted border-border",
+};
+
+function frameworkLabel(f: string): string {
+  const m: Record<string, string> = {
+    PCI_DSS: "PCI DSS", NIST_CSF: "NIST CSF", ISO_27001: "ISO 27001",
+    CIS_CONTROLS: "CIS Controls", GDPR: "GDPR", HIPAA: "HIPAA",
+    SOC2: "SOC 2", GENERAL: "General",
+  };
+  return m[f] ?? f;
+}
 
 export default async function AdminCoursesPage() {
   const session = await auth();
@@ -26,10 +47,26 @@ export default async function AdminCoursesPage() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-heading font-bold text-text-primary">Courses</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          {courses.length} courses in the platform. Assign them to employees or departments.
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-text-primary">Courses</h1>
+          <p className="text-text-secondary text-sm mt-1">
+            {courses.length} courses · Assign to employees, departments, or groups.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/admin/templates" className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
+            Manage simulation templates →
+          </Link>
+        </div>
+      </div>
+
+      {/* Compliance filter hint */}
+      <div className="mb-5 rounded-card border border-border bg-elevated px-5 py-3.5 flex items-center gap-3">
+        <ShieldCheck className="h-4 w-4 text-accent flex-shrink-0" />
+        <p className="text-sm text-text-secondary">
+          Each course is tagged with the compliance frameworks it helps satisfy.
+          Use the <strong className="text-text-primary">Assign</strong> button to enrol users — by department, role, or all employees.
         </p>
       </div>
 
@@ -54,6 +91,12 @@ export default async function AdminCoursesPage() {
                         {course.status}
                       </Badge>
                       {course.isMandatory && <Badge variant="destructive">Mandatory</Badge>}
+                      {course.isRecurring && (
+                        <Badge variant="outline" className="gap-1">
+                          <RefreshCw className="h-2.5 w-2.5" />
+                          Recurring
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <AssignCourseButton
@@ -64,6 +107,20 @@ export default async function AdminCoursesPage() {
                 </div>
                 <CardTitle className="text-sm">{course.title}</CardTitle>
                 <p className="text-xs text-text-muted line-clamp-2 mt-1">{course.description}</p>
+
+                {/* Compliance framework tags */}
+                {course.complianceFrameworks.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {course.complianceFrameworks.map((f) => (
+                      <span
+                        key={f}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${FRAMEWORK_COLORS[f] ?? FRAMEWORK_COLORS.GENERAL}`}
+                      >
+                        {frameworkLabel(f)}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="mt-auto space-y-3">
                 <div className="grid grid-cols-4 gap-2 text-center">
@@ -89,10 +146,7 @@ export default async function AdminCoursesPage() {
                     <span>{enrollmentRate}%</span>
                   </div>
                   <div className="h-1 bg-border rounded-full">
-                    <div
-                      className="h-1 bg-accent rounded-full transition-all"
-                      style={{ width: `${enrollmentRate}%` }}
-                    />
+                    <div className="h-1 bg-accent rounded-full transition-all" style={{ width: `${enrollmentRate}%` }} />
                   </div>
                 </div>
 
@@ -103,6 +157,11 @@ export default async function AdminCoursesPage() {
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />Pass: {course.passMark}%
                   </span>
+                  {course.isRecurring && course.recurringIntervalMonths && (
+                    <span className="flex items-center gap-1">
+                      <RefreshCw className="h-3 w-3" />Every {course.recurringIntervalMonths}mo
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>

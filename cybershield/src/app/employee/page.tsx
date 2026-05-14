@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskGauge } from "@/components/RiskGauge";
-import { BookOpen, Shield, Bell, CheckCircle2, Clock, AlertTriangle, Inbox, Trophy } from "lucide-react";
+import { BookOpen, Shield, Bell, CheckCircle2, AlertTriangle, Inbox, Trophy } from "lucide-react";
+import { MicroAssessmentBanner } from "./micro-assessment/MicroAssessmentBanner";
 
 function statusBadge(status: string): any {
   const m: Record<string, any> = {
@@ -19,7 +20,10 @@ export default async function EmployeeDashboard() {
   if (!session?.user) redirect("/login");
   const userId = session.user.id!;
 
-  const [enrollments, unreadNotifs, tip, user, certCount, inboxUnread] = await Promise.all([
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const [enrollments, unreadNotifs, tip, user, certCount, inboxUnread, retentionCheck] = await Promise.all([
     db.enrollment.findMany({
       where: { userId },
       include: { course: { select: { title: true, estimatedMin: true } } },
@@ -31,6 +35,20 @@ export default async function EmployeeDashboard() {
     db.user.findUnique({ where: { id: userId }, select: { riskScore: true, name: true } }),
     db.certificate.count({ where: { userId } }),
     db.simulatedInboxItem.count({ where: { userId, isRead: false } }),
+    db.enrollment.findFirst({
+      where: {
+        userId,
+        status: "COMPLETED",
+        completedAt: { lte: sevenDaysAgo },
+        course: { retentionCheckEnabled: true },
+      },
+      include: {
+        course: {
+          select: { title: true, assessments: { include: { questions: { take: 3, orderBy: { orderIndex: "asc" } } } } },
+        },
+      },
+      orderBy: { completedAt: "asc" },
+    }),
   ]);
 
   const completedCount = enrollments.filter((e) => e.status === "COMPLETED").length;
@@ -38,6 +56,14 @@ export default async function EmployeeDashboard() {
     (e) => e.dueAt && new Date(e.dueAt) < new Date() && e.status !== "COMPLETED"
   ).length;
   const firstName = user?.name?.split(" ")[0] ?? "there";
+
+  const retentionQuestions = retentionCheck?.course.assessments[0]?.questions.map((q) => ({
+    id: q.id,
+    text: q.text,
+    options: q.options as { id: string; text: string }[],
+    correctOptionId: q.correctOptionId,
+    explanation: q.explanation,
+  })) ?? [];
 
   const quickStats = [
     { label: "Overdue", value: overdueCount, icon: AlertTriangle, color: "text-danger", bg: "bg-danger/10", href: "/employee/courses" },
@@ -69,6 +95,15 @@ export default async function EmployeeDashboard() {
           <Shield className="h-8 w-8" style={{ color: "var(--accent)" }} />
         </div>
       </div>
+
+      {/* Micro-assessment retention check */}
+      {retentionCheck && retentionQuestions.length > 0 && (
+        <MicroAssessmentBanner
+          courseTitle={retentionCheck.course.title}
+          enrollmentId={retentionCheck.id}
+          questions={retentionQuestions}
+        />
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

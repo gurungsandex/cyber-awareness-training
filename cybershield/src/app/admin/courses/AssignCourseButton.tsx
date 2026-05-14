@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { UserPlus, X, CheckCircle2, Loader2 } from "lucide-react";
+import { UserPlus, X, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -18,6 +18,8 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
   const [departmentId, setDepartmentId] = useState("");
   const [role, setRole] = useState("EMPLOYEE");
   const [dueInDays, setDueInDays] = useState(30);
+  const [recurring, setRecurring] = useState(false);
+  const [recurringMonths, setRecurringMonths] = useState(12);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ enrolled: number; skipped: number } | null>(null);
   const [error, setError] = useState("");
@@ -30,6 +32,7 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
       const body: any = { target, dueInDays };
       if (target === "DEPARTMENT") body.departmentId = departmentId;
       if (target === "ROLE") body.role = role;
+      if (recurring) body.recurringMonths = recurringMonths;
       const res = await fetch(`/api/admin/courses/${courseId}/assign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,10 +83,16 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                     <span className="font-medium text-success">{result.enrolled} users enrolled</span>
                     {result.skipped > 0 && `, ${result.skipped} already enrolled (skipped)`}
                   </p>
+                  {recurring && (
+                    <p className="text-xs text-text-muted mt-2 flex items-center justify-center gap-1">
+                      <RefreshCw className="h-3 w-3" /> Recurring every {recurringMonths} months
+                    </p>
+                  )}
                   <Button onClick={close} className="mt-4 w-full">Done</Button>
                 </div>
               ) : (
                 <>
+                  {/* Target */}
                   <div>
                     <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-2">Assign to</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -98,7 +107,7 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                               : "border-border text-text-secondary hover:border-accent/40 hover:text-text-primary"
                           )}
                         >
-                          {t === "ALL" ? "All Users" : t === "DEPARTMENT" ? "Department" : "By Role"}
+                          {t === "ALL" ? "All Users" : t === "DEPARTMENT" ? "Group/Dept" : "By Role"}
                         </button>
                       ))}
                     </div>
@@ -106,13 +115,13 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
 
                   {target === "DEPARTMENT" && (
                     <div>
-                      <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Department</label>
+                      <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Group / Department</label>
                       <select
                         value={departmentId}
                         onChange={(e) => setDepartmentId(e.target.value)}
                         className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                       >
-                        <option value="">Select department…</option>
+                        <option value="">Select group…</option>
                         {departments.map((d) => (
                           <option key={d.id} value={d.id}>{d.name}</option>
                         ))}
@@ -135,6 +144,7 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                     </div>
                   )}
 
+                  {/* Due date */}
                   <div>
                     <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">
                       Due in <span className="text-accent font-semibold">{dueInDays} days</span>
@@ -148,6 +158,47 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                     <div className="flex justify-between text-xs text-text-muted mt-0.5">
                       <span>7 days</span><span>90 days</span>
                     </div>
+                  </div>
+
+                  {/* Recurring */}
+                  <div className="rounded-lg border border-border p-3.5 space-y-3">
+                    <button
+                      onClick={() => setRecurring((r) => !r)}
+                      className="w-full flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className={cn("h-4 w-4", recurring ? "text-accent" : "text-text-muted")} />
+                        <span className="text-sm font-medium text-text-primary">Recurring assignment</span>
+                      </div>
+                      <div className={cn(
+                        "w-9 h-5 rounded-full transition-colors",
+                        recurring ? "bg-accent" : "bg-border"
+                      )}>
+                        <div className={cn(
+                          "w-4 h-4 rounded-full bg-white mt-0.5 transition-transform shadow-sm",
+                          recurring ? "translate-x-4" : "translate-x-0.5"
+                        )} />
+                      </div>
+                    </button>
+                    {recurring && (
+                      <div>
+                        <label className="text-xs text-text-muted block mb-1">
+                          Re-assign every <span className="text-accent font-semibold">{recurringMonths} months</span>
+                        </label>
+                        <input
+                          type="range" min={3} max={24} step={3}
+                          value={recurringMonths}
+                          onChange={(e) => setRecurringMonths(Number(e.target.value))}
+                          className="w-full accent-accent"
+                        />
+                        <div className="flex justify-between text-xs text-text-muted mt-0.5">
+                          <span>3 mo</span><span>24 mo</span>
+                        </div>
+                        <p className="text-xs text-text-muted mt-1.5">
+                          Users will be automatically re-enrolled when their completed assignment expires.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {error && (

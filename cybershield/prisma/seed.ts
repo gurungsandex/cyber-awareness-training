@@ -19,12 +19,30 @@ async function upsertCourse(
     isMandatory?: boolean;
     passMark?: number;
     estimatedMin?: number;
+    complianceFrameworks?: import("@prisma/client").ComplianceFramework[];
+    track?: import("@prisma/client").CourseTrack;
+    isRecurring?: boolean;
+    recurringIntervalMonths?: number;
   }
 ) {
+  const { complianceFrameworks, track, isRecurring, recurringIntervalMonths, ...rest } = data;
   return db.course.upsert({
     where: { id },
-    update: {},
-    create: { id, status: CourseStatus.PUBLISHED, ...data },
+    update: {
+      ...(complianceFrameworks !== undefined && { complianceFrameworks }),
+      ...(track !== undefined && { track }),
+      ...(isRecurring !== undefined && { isRecurring }),
+      ...(recurringIntervalMonths !== undefined && { recurringIntervalMonths }),
+    },
+    create: {
+      id,
+      status: CourseStatus.PUBLISHED,
+      ...(complianceFrameworks !== undefined && { complianceFrameworks }),
+      ...(track !== undefined && { track }),
+      ...(isRecurring !== undefined && { isRecurring }),
+      ...(recurringIntervalMonths !== undefined && { recurringIntervalMonths }),
+      ...rest,
+    },
   });
 }
 
@@ -172,6 +190,10 @@ async function main() {
     isMandatory: true,
     passMark: 80,
     estimatedMin: 25,
+    complianceFrameworks: ["GENERAL", "NIST_CSF", "CIS_CONTROLS", "SOC2"],
+    track: "PHISHING_DEFENSE",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
   });
 
   const mod1_1 = await upsertModule("mod-ph-1", "course-phishing-101", "The Anatomy of a Phish", 0);
@@ -325,6 +347,10 @@ Sophisticated attackers combine channels: an email primes you, then a follow-up 
     isMandatory: true,
     passMark: 80,
     estimatedMin: 20,
+    complianceFrameworks: ["GENERAL", "NIST_CSF", "SOC2", "ISO_27001"],
+    track: "SECURITY_AWARENESS",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
   });
 
   const mod2_1 = await upsertModule("mod-pw-1", "course-password-mfa", "The Problem with Passwords", 0);
@@ -487,6 +513,8 @@ Attackers who have your password can flood your phone with push notification req
     isMandatory: false,
     passMark: 75,
     estimatedMin: 30,
+    complianceFrameworks: ["GENERAL", "NIST_CSF", "SOC2"],
+    track: "SECURITY_AWARENESS",
   });
 
   const mod3_1 = await upsertModule("mod-se-1", "course-social-engineering", "The Psychology of Manipulation", 0);
@@ -621,6 +649,8 @@ Company policy is your shield. "I need to follow our verification procedure" is 
     isMandatory: false,
     passMark: 75,
     estimatedMin: 20,
+    complianceFrameworks: ["GENERAL", "CIS_CONTROLS"],
+    track: "SECURITY_AWARENESS",
   });
 
   const mod4_1 = await upsertModule("mod-sb-1", "course-safe-browsing", "Recognising Dangerous Websites", 0);
@@ -710,6 +740,10 @@ Extensions have broad access to your browsing data. Malicious extensions can ste
     isMandatory: true,
     passMark: 80,
     estimatedMin: 25,
+    complianceFrameworks: ["GDPR", "HIPAA", "SOC2", "ISO_27001"],
+    track: "DATA_PRIVACY",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
   });
 
   const mod5_1 = await upsertModule("mod-dp-1", "course-data-protection", "Understanding Personal Data", 0);
@@ -808,6 +842,10 @@ Individuals have the right to ask what data you hold about them. You must respon
     isMandatory: true,
     passMark: 80,
     estimatedMin: 22,
+    complianceFrameworks: ["NIST_CSF", "CIS_CONTROLS", "SOC2", "ISO_27001"],
+    track: "SECURITY_AWARENESS",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
   });
 
   const mod6_1 = await upsertModule("mod-rm-1", "course-ransomware", "How Ransomware Works", 0);
@@ -907,6 +945,8 @@ If ransomware encrypts your files, a clean backup is your recovery option. Use y
     isMandatory: false,
     passMark: 75,
     estimatedMin: 18,
+    complianceFrameworks: ["NIST_CSF", "CIS_CONTROLS", "ISO_27001"],
+    track: "SECURITY_AWARENESS",
   });
 
   const mod7_1 = await upsertModule("mod-mr-1", "course-mobile-remote", "Remote Work Security", 0);
@@ -1007,6 +1047,10 @@ Review what permissions apps request. A flashlight app requesting access to your
     isMandatory: true,
     passMark: 80,
     estimatedMin: 15,
+    complianceFrameworks: ["NIST_CSF", "ISO_27001", "SOC2", "HIPAA"],
+    track: "INCIDENT_RESPONSE",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
   });
 
   const mod8_1 = await upsertModule("mod-ir-1", "course-incident-response", "Recognise, Report, Respond", 0);
