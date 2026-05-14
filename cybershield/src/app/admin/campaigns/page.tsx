@@ -37,66 +37,64 @@ export default async function CampaignsPage() {
   ]);
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-          <p className="text-gray-500 mt-1">
-            {campaigns.length} phishing simulation campaign(s). Launch new ones using any of the {templates.length} available templates.
+          <h1 className="text-2xl font-heading font-bold text-text-primary">Campaigns</h1>
+          <p className="text-text-secondary text-sm mt-1">
+            {campaigns.length} phishing simulation campaign(s) · {templates.length} templates available
           </p>
         </div>
         <CreateCampaignButton templates={templates} />
       </div>
 
       {campaigns.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center">
-          <Siren className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No campaigns yet</p>
-          <p className="text-sm text-gray-400 mt-1">Click "New Campaign" to create your first phishing simulation.</p>
+        <div className="rounded-card border-2 border-dashed border-border py-16 text-center">
+          <Siren className="h-12 w-12 text-text-muted mx-auto mb-3 opacity-30" />
+          <p className="text-text-secondary font-medium">No campaigns yet</p>
+          <p className="text-sm text-text-muted mt-1">Click "New Campaign" to create your first phishing simulation.</p>
         </div>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Siren className="h-5 w-5 text-brand-600" />
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Siren className="h-4 w-4 text-accent" />
               All Campaigns
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    {["Campaign", "Template", "Type", "Difficulty", "Scheduled", "Interactions", "Status"].map((h) => (
-                      <th key={h} className="text-left py-3 pr-4 font-medium text-gray-500 whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {campaigns.map((c) => (
-                    <tr key={c.id} className="hover:bg-gray-50">
-                      <td className="py-3 pr-4 font-medium text-gray-900 max-w-48">
-                        <p className="truncate">{c.name}</p>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-500 max-w-40">
-                        <p className="truncate">{c.template.name}</p>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{c.template.type.replace("_", " ")}</td>
-                      <td className="py-3 pr-4">
-                        <Badge variant={difficultyVariant[c.template.difficulty]}>{c.template.difficulty}</Badge>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-400 whitespace-nowrap">
-                        {new Date(c.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      </td>
-                      <td className="py-3 pr-4 text-gray-700">{c._count.interactions}</td>
-                      <td className="py-3">
-                        <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
-                      </td>
-                    </tr>
+          <CardContent className="pt-0 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  {["Campaign", "Template", "Type", "Difficulty", "Scheduled", "Interactions", "Status"].map((h) => (
+                    <th key={h} className="text-left pb-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {campaigns.map((c) => (
+                  <tr key={c.id} className="hover:bg-elevated/40">
+                    <td className="py-3 pr-4 font-medium text-text-primary max-w-48">
+                      <p className="truncate">{c.name}</p>
+                    </td>
+                    <td className="py-3 pr-4 text-text-secondary max-w-40">
+                      <p className="truncate">{c.template.name}</p>
+                    </td>
+                    <td className="py-3 pr-4 text-text-muted whitespace-nowrap text-xs">{c.template.type.replace("_", " ")}</td>
+                    <td className="py-3 pr-4">
+                      <Badge variant={difficultyVariant[c.template.difficulty]}>{c.template.difficulty}</Badge>
+                    </td>
+                    <td className="py-3 pr-4 text-text-muted whitespace-nowrap text-xs">
+                      {new Date(c.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </td>
+                    <td className="py-3 pr-4 text-text-secondary">{c._count.interactions}</td>
+                    <td className="py-3">
+                      <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </CardContent>
         </Card>
       )}

@@ -1,7 +1,3 @@
-// CyberShield — Single source of truth for the data model
-// Covers all 11 entities used across simulations, training, campaigns,
-// assessments, certificates, audit, tips, and notifications.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,6 +6,8 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Role {
   ADMIN
@@ -66,19 +64,78 @@ enum NotificationKind {
   CERT_ISSUED
   NEW_HIRE_WELCOME
   TIP_OF_THE_DAY
+  NUDGE_RECEIVED
+  SYSTEM_ALERT
 }
+
+enum ComplianceFramework {
+  HIPAA
+  PCI_DSS
+  GDPR
+  SOC2
+  NIST_CSF
+  ISO_27001
+  CIS_CONTROLS
+  GENERAL
+}
+
+enum CourseTrack {
+  SECURITY_AWARENESS
+  PHISHING_DEFENSE
+  DATA_PRIVACY
+  INCIDENT_RESPONSE
+  COMPLIANCE
+  LEADERSHIP
+}
+
+enum DeadlineEnforcement {
+  SOFT
+  HARD
+  ESCALATE
+}
+
+// ─── Tenant ───────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  logoUrl     String?
+  primaryColor String  @default("#00B4D8")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users            User[]
+  departments      Department[]
+  courses          Course[]
+  courseGroups     CourseGroup[]
+  simulationTemplates SimulationTemplate[]
+  campaigns        Campaign[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  securityTips     SecurityTip[]
+  badges           Badge[]
+  nudgeLogs        NudgeLog[]
+}
+
+// ─── Users & Departments ──────────────────────────────────────────────────────
 
 model User {
   id            String     @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?    @relation(fields: [tenantId], references: [id])
   email         String     @unique
   name          String
   passwordHash  String
   role          Role       @default(EMPLOYEE)
   departmentId  String?
   department    Department? @relation(fields: [departmentId], references: [id])
+  managerId     String?
+  manager       User?      @relation("Reports", fields: [managerId], references: [id])
+  reports       User[]     @relation("Reports")
   isNewHire     Boolean    @default(false)
   hiredAt       DateTime?
-  riskScore     Int        @default(0)     // 0–100 rolling risk score
+  riskScore     Int        @default(0)
   lastLoginAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -90,33 +147,92 @@ model User {
   certificates       Certificate[]
   notifications      Notification[]
   auditLogs          AuditLog[]
+  managerGrants      ManagerGrant[]
+  userBadges         UserBadge[]
+  simulatedInboxItems SimulatedInboxItem[]
+  nudgesSent         NudgeLog[] @relation("NudgeSender")
+  nudgesReceived     NudgeLog[] @relation("NudgeTarget")
+
+  @@index([tenantId, role])
+  @@index([tenantId, departmentId])
 }
 
 model Department {
   id          String   @id @default(cuid())
-  name        String   @unique
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  name        String
   description String?
   createdAt   DateTime @default(now())
   users       User[]
   campaignTargets CampaignTarget[]
+
+  @@unique([tenantId, name])
+}
+
+// ─── Manager Grants ───────────────────────────────────────────────────────────
+
+model ManagerGrant {
+  id        String   @id @default(cuid())
+  managerId String
+  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  grantedAt DateTime @default(now())
+  @@unique([managerId, courseId])
 }
 
 // ─── Training ─────────────────────────────────────────────────────────────────
 
+model CourseGroup {
+  id          String            @id @default(cuid())
+  tenantId    String?
+  tenant      Tenant?           @relation(fields: [tenantId], references: [id])
+  name        String
+  description String?
+  complianceFramework ComplianceFramework?
+  createdAt   DateTime          @default(now())
+  items       CourseGroupItem[]
+}
+
+model CourseGroupItem {
+  id            String      @id @default(cuid())
+  courseGroupId String
+  courseGroup   CourseGroup @relation(fields: [courseGroupId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  orderIndex    Int         @default(0)
+  @@unique([courseGroupId, courseId])
+}
+
 model Course {
   id            String       @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?      @relation(fields: [tenantId], references: [id])
   title         String
   description   String
   status        CourseStatus @default(DRAFT)
   isMandatory   Boolean      @default(false)
-  passMark      Int          @default(80) // percent
+  passMark      Int          @default(80)
   estimatedMin  Int          @default(20)
   thumbnailUrl  String?
+  complianceFrameworks ComplianceFramework[]
+  track         CourseTrack  @default(SECURITY_AWARENESS)
+  isRecurring   Boolean      @default(false)
+  recurringIntervalMonths Int?
+  retentionCheckEnabled Boolean @default(false)
+  deadlineEnforcement DeadlineEnforcement @default(SOFT)
+  simulationSchema Json?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-  modules       Module[]
-  enrollments   Enrollment[]
-  assessments   Assessment[]
+
+  modules         Module[]
+  enrollments     Enrollment[]
+  assessments     Assessment[]
+  managerGrants   ManagerGrant[]
+  courseGroupItems CourseGroupItem[]
+
+  @@index([tenantId, status])
 }
 
 model Module {
@@ -133,7 +249,7 @@ model Lesson {
   moduleId      String
   module        Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title         String
-  content       String   // markdown body
+  content       String
   videoUrl      String?
   orderIndex    Int
   durationMin   Int      @default(5)
@@ -151,18 +267,21 @@ model LessonCompletion {
 }
 
 model Enrollment {
-  id           String           @id @default(cuid())
-  userId       String
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId     String
-  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   status          EnrollmentStatus @default(ENROLLED)
   progressPct     Int              @default(0)
+  simulationProgress Json?
   assignedAt      DateTime         @default(now())
   dueAt           DateTime?
   completedAt     DateTime?
   isRemediation   Boolean          @default(false)
+  assignedByRole  Role?
   lessonCompletions LessonCompletion[]
+  nudgeLogs       NudgeLog[]
   @@unique([userId, courseId])
 }
 
@@ -184,7 +303,7 @@ model AssessmentQuestion {
   assessmentId    String
   assessment      Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   text            String
-  options         Json       // [{id, text}]
+  options         Json
   correctOptionId String
   explanation     String
   orderIndex      Int
@@ -199,7 +318,7 @@ model AssessmentAttempt {
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   scorePct      Int
   passed        Boolean
-  answers       Json       // [{questionId, selectedOptionId, correct}]
+  answers       Json
   submittedAt   DateTime   @default(now())
   certificate   Certificate?
 }
@@ -212,20 +331,46 @@ model Certificate {
   attempt     AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   courseTitle String
   issuedAt    DateTime @default(now())
-  pdfPath     String?  // server filesystem path
+  pdfPath     String?
   verifyCode  String   @unique
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+
+model Badge {
+  id          String      @id @default(cuid())
+  tenantId    String?
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id])
+  name        String
+  description String
+  iconUrl     String?
+  criteria    Json
+  createdAt   DateTime    @default(now())
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime @default(now())
+  @@unique([userId, badgeId])
 }
 
 // ─── Simulations & Campaigns ─────────────────────────────────────────────────
 
 model SimulationTemplate {
   id           String               @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?              @relation(fields: [tenantId], references: [id])
   name         String
   type         SimulationType
   difficulty   SimulationDifficulty @default(MEDIUM)
-  attackTactic String               // "credential_harvest", "urgency", "authority", etc.
-  payload      Json                 // subject/body/sender/sms_text/login_brand etc.
-  redFlags     Json                 // string[] of warning signs to surface post-action
+  attackTactic String
+  payload      Json
+  redFlags     Json
   aiGenerated  Boolean              @default(false)
   createdAt    DateTime             @default(now())
   campaigns    Campaign[]
@@ -233,6 +378,8 @@ model SimulationTemplate {
 
 model Campaign {
   id           String         @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id])
   name         String
   templateId   String
   template     SimulationTemplate @relation(fields: [templateId], references: [id])
@@ -243,13 +390,15 @@ model Campaign {
   createdAt    DateTime       @default(now())
   targets      CampaignTarget[]
   interactions SimulationInteraction[]
+  simulatedInboxItems SimulatedInboxItem[]
+
+  @@index([tenantId, status])
 }
 
 model CampaignTarget {
   id           String     @id @default(cuid())
   campaignId   String
   campaign     Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  // Either by department, role, or all
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
   role         Role?
@@ -263,24 +412,65 @@ model SimulationInteraction {
   userId      String
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   action      InteractionAction
-  metadata    Json?             // {timeToAction, redFlagsSeen, etc.}
+  metadata    Json?
   occurredAt  DateTime          @default(now())
   @@index([userId, campaignId])
+}
+
+model SimulatedInboxItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subject     String
+  senderName  String
+  senderEmail String
+  body        String
+  isRead      Boolean  @default(false)
+  isPhishing  Boolean  @default(true)
+  reportedAt  DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  createdAt   DateTime @default(now())
+  @@index([userId, createdAt])
+}
+
+// ─── Nudge System ─────────────────────────────────────────────────────────────
+
+model NudgeLog {
+  id           String     @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?    @relation(fields: [tenantId], references: [id])
+  senderId     String
+  sender       User       @relation("NudgeSender", fields: [senderId], references: [id])
+  targetUserId String
+  targetUser   User       @relation("NudgeTarget", fields: [targetUserId], references: [id])
+  enrollmentId String?
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id])
+  nudgeType    String
+  message      String?
+  sentAt       DateTime   @default(now())
+  @@index([targetUserId, sentAt])
 }
 
 // ─── Tips, Notifications & Audit ─────────────────────────────────────────────
 
 model SecurityTip {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   title     String
   body      String
-  category  String   // "password", "phishing", "mobile", etc.
+  category  String
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }
 
 model Notification {
   id        String            @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?           @relation(fields: [tenantId], references: [id])
   userId    String
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   kind      NotificationKind
@@ -288,19 +478,26 @@ model Notification {
   body      String
   link      String?
   readAt    DateTime?
+  archivedAt DateTime?
   createdAt DateTime          @default(now())
   @@index([userId, readAt])
+  @@index([tenantId, createdAt])
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
-  action    String   // "USER_CREATE", "CAMPAIGN_LAUNCH", etc.
-  entity    String   // model name
+  action    String
+  entity    String
   entityId  String?
+  ipAddress String?
+  userAgent String?
   metadata  Json?
   createdAt DateTime @default(now())
   @@index([entity, entityId])
   @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
 }

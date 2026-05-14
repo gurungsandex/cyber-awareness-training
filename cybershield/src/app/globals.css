@@ -3,13 +3,65 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --canvas: #0D1117;
+    --surface: #161B22;
+    --elevated: #1C2128;
+    --border: #30363D;
+    --text-primary: #E6EDF3;
+    --text-secondary: #8B949E;
+    --text-muted: #484F58;
+    --accent: #00B4D8;
+    --accent-hover: #0096B7;
+    --success: #3FB950;
+    --warning: #D29922;
+    --danger: #F85149;
+  }
+
   *, *::before, *::after {
     box-sizing: border-box;
   }
-  body {
-    @apply text-gray-900 bg-gray-50;
+
+  html {
+    color-scheme: dark;
   }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--text-primary);
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sora), system-ui, sans-serif;
+    color: var(--text-primary);
+  }
+
   h1 { @apply text-3xl font-bold; }
   h2 { @apply text-2xl font-semibold; }
   h3 { @apply text-xl font-semibold; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-border bg-surface;
+  }
+  .card-elevated {
+    @apply rounded-card border border-border bg-elevated;
+  }
+  .stat-card {
+    @apply card p-5 flex flex-col gap-2;
+  }
+  .section-title {
+    @apply font-heading text-lg font-semibold text-text-primary;
+  }
+  .label-muted {
+    @apply text-xs font-medium uppercase tracking-wider text-text-muted;
+  }
 }

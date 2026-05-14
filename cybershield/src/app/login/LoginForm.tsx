@@ -33,19 +33,19 @@ export function LoginForm() {
     <div className="w-full max-w-md">
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
-        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
-          <Shield className="w-9 h-9 text-white" />
+        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 mb-4">
+          <Shield className="w-9 h-9 text-accent" />
         </div>
-        <h1 className="text-3xl font-bold text-white">CyberShield</h1>
-        <p className="text-brand-200 mt-1 text-sm">Security Awareness Platform</p>
+        <h1 className="text-3xl font-heading font-bold text-text-primary">CyberShield</h1>
+        <p className="text-text-muted mt-1 text-sm">Security Awareness Platform</p>
       </div>
 
       {/* Card */}
-      <div className="bg-white rounded-2xl shadow-2xl p-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
+      <div className="bg-surface border border-border rounded-modal shadow-modal p-8">
+        <h2 className="text-lg font-heading font-semibold text-text-primary mb-6">Sign in to your account</h2>
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             {error}
           </div>
@@ -53,9 +53,9 @@ export function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
               <Input
                 type="email"
                 placeholder="you@company.com"
@@ -68,9 +68,9 @@ export function LoginForm() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
               <Input
                 type="password"
                 placeholder="••••••••"
@@ -87,11 +87,11 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-gray-50 p-4 text-xs text-gray-500 space-y-1">
-          <p className="font-medium text-gray-600">Demo accounts</p>
-          <p>admin@cybershield.local / ChangeMe!2026</p>
-          <p>manager@cybershield.local / Manager!2026</p>
-          <p>alice.chen@cybershield.local / Employee!2026</p>
+        <div className="mt-6 rounded-lg bg-elevated border border-border p-4 text-xs text-text-muted space-y-1">
+          <p className="font-medium text-text-secondary">Demo accounts</p>
+          <p className="font-mono">admin@cybershield.local / ChangeMe!2026</p>
+          <p className="font-mono">manager@cybershield.local / Manager!2026</p>
+          <p className="font-mono">alice.chen@cybershield.local / Employee!2026</p>
         </div>
       </div>
     </div>

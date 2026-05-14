@@ -111,12 +111,17 @@ async function main() {
   console.log("🌱 Seeding CyberShield...\n");
 
   // ── Departments ─────────────────────────────────────────────────────────────
+  async function upsertDept(name: string, description: string) {
+    const existing = await db.department.findFirst({ where: { name, tenantId: null } });
+    if (existing) return existing;
+    return db.department.create({ data: { name, description } });
+  }
   const [it, finance, hr, sales, legal] = await Promise.all([
-    db.department.upsert({ where: { name: "IT" }, update: {}, create: { name: "IT", description: "Information Technology" } }),
-    db.department.upsert({ where: { name: "Finance" }, update: {}, create: { name: "Finance", description: "Finance & Accounting" } }),
-    db.department.upsert({ where: { name: "HR" }, update: {}, create: { name: "HR", description: "Human Resources" } }),
-    db.department.upsert({ where: { name: "Sales" }, update: {}, create: { name: "Sales", description: "Sales & Marketing" } }),
-    db.department.upsert({ where: { name: "Legal" }, update: {}, create: { name: "Legal", description: "Legal & Compliance" } }),
+    upsertDept("IT", "Information Technology"),
+    upsertDept("Finance", "Finance & Accounting"),
+    upsertDept("HR", "Human Resources"),
+    upsertDept("Sales", "Sales & Marketing"),
+    upsertDept("Legal", "Legal & Compliance"),
   ]);
   console.log("✅ Departments");
 
