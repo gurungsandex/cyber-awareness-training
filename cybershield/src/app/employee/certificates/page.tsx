@@ -1,8 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Download } from "lucide-react";
+import { Trophy, Download, Shield } from "lucide-react";
 
 export default async function CertificatesPage() {
   const session = await auth();
@@ -14,42 +13,47 @@ export default async function CertificatesPage() {
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">My Certificates</h1>
-        <p className="text-gray-500 mt-1">{certs.length} certificate(s) earned.</p>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-heading font-bold text-text-primary">My Certificates</h1>
+        <p className="text-text-secondary text-sm mt-1">{certs.length} certificate(s) earned.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {certs.map((c) => (
-          <Card key={c.id} className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-white">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-                <CardTitle className="text-base">{c.courseTitle}</CardTitle>
+          <div key={c.id} className="rounded-card border border-warning/20 bg-gradient-to-br from-warning/5 to-surface p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 rounded-lg bg-warning/10">
+                <Trophy className="h-5 w-5 text-warning" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-500 mb-1">
-                Issued: {new Date(c.issuedAt).toLocaleDateString()}
-              </p>
-              <p className="text-xs text-gray-400 font-mono">#{c.verifyCode}</p>
-              {c.pdfPath && (
-                <a
-                  href={c.pdfPath}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 flex items-center gap-2 text-sm text-brand-600 hover:underline"
-                >
-                  <Download className="h-4 w-4" /> Download PDF
-                </a>
-              )}
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-xs text-text-muted uppercase tracking-wide">Certificate of Completion</p>
+              </div>
+            </div>
+            <h3 className="font-heading font-semibold text-text-primary text-sm mb-2">{c.courseTitle}</h3>
+            <p className="text-xs text-text-muted mb-1">
+              Issued: {new Date(c.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <p className="text-xs text-text-muted font-mono mb-4">#{c.verifyCode}</p>
+            {c.pdfPath ? (
+              <a
+                href={c.pdfPath}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs text-accent hover:underline"
+              >
+                <Download className="h-3.5 w-3.5" /> Download PDF
+              </a>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-text-muted">
+                <Shield className="h-3.5 w-3.5" /> Verify: /verify/{c.verifyCode}
+              </div>
+            )}
+          </div>
         ))}
         {certs.length === 0 && (
-          <div className="col-span-3 text-center py-16 text-gray-400">
-            <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>No certificates yet. Complete a course to earn one!</p>
+          <div className="col-span-3 text-center py-16 text-text-muted">
+            <Trophy className="h-12 w-12 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">No certificates yet. Complete a course to earn one!</p>
           </div>
         )}
       </div>

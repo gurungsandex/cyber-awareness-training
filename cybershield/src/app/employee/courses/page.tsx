@@ -1,15 +1,16 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, CheckCircle2 } from "lucide-react";
+import { BookOpen, Clock, CheckCircle2, ChevronRight, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-function statusVariant(status: string): "secondary" | "default" | "success" | "destructive" {
-  const map: Record<string, "secondary" | "default" | "success" | "destructive"> = {
+function statusVariant(status: string): any {
+  const m: Record<string, any> = {
     ENROLLED: "secondary", IN_PROGRESS: "default", COMPLETED: "success", FAILED: "destructive",
   };
-  return map[status] ?? "secondary";
+  return m[status] ?? "secondary";
 }
 
 export default async function CoursesPage() {
@@ -18,61 +19,80 @@ export default async function CoursesPage() {
 
   const enrollments = await db.enrollment.findMany({
     where: { userId: session.user.id },
-    include: { course: { include: { assessments: true } } },
-    orderBy: { assignedAt: "desc" },
+    include: { course: { include: { assessments: { select: { id: true } }, _count: { select: { modules: true } } } } },
+    orderBy: [{ status: "asc" }, { assignedAt: "desc" }],
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
-        <p className="text-gray-500 mt-1">{enrollments.length} course(s) assigned to you.</p>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-heading font-bold text-text-primary">My Courses</h1>
+        <p className="text-text-secondary text-sm mt-1">{enrollments.length} course(s) assigned to you.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {enrollments.map((e) => (
-          <Card key={e.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-2">
-                <div className="p-2 rounded-lg bg-brand-50">
-                  <BookOpen className="h-5 w-5 text-brand-600" />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {enrollments.map((e) => {
+          const isOverdue = e.dueAt && new Date(e.dueAt) < new Date() && e.status !== "COMPLETED";
+          return (
+            <Link
+              key={e.id}
+              href={`/employee/courses/${e.course.id}`}
+              className="card flex flex-col hover:border-accent/30 transition-colors group"
+            >
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <BookOpen className="h-4 w-4 text-accent" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isOverdue && <AlertTriangle className="h-4 w-4 text-danger" />}
+                    <Badge variant={statusVariant(e.status)} className="text-xs">{e.status.replace("_", " ")}</Badge>
+                  </div>
                 </div>
-                <Badge variant={statusVariant(e.status)}>{e.status.replace("_", " ")}</Badge>
+                <h3 className="font-heading font-semibold text-text-primary text-sm leading-snug mb-1">{e.course.title}</h3>
+                <p className="text-xs text-text-muted line-clamp-2">{e.course.description}</p>
               </div>
-              <CardTitle className="mt-3 text-base">{e.course.title}</CardTitle>
-              <p className="text-sm text-gray-500 line-clamp-2">{e.course.description}</p>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>Progress</span>
-                  <span>{e.progressPct}%</span>
+              <div className="px-5 pb-5 mt-auto space-y-2">
+                <div>
+                  <div className="flex justify-between text-xs text-text-muted mb-1">
+                    <span>Progress</span>
+                    <span>{e.progressPct}%</span>
+                  </div>
+                  <div className="h-1 bg-border rounded-full">
+                    <div
+                      className={cn("h-1 rounded-full transition-all", e.status === "COMPLETED" ? "bg-success" : "bg-accent")}
+                      style={{ width: `${e.progressPct}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full">
-                  <div className="h-2 bg-brand-500 rounded-full transition-all" style={{ width: `${e.progressPct}%` }} />
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
+                <div className="flex items-center justify-between text-xs text-text-muted">
                   <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {e.course.estimatedMin} min
+                    <Clock className="h-3 w-3" />{e.course.estimatedMin} min
                   </span>
-                  {e.dueAt && (
-                    <span className={new Date(e.dueAt) < new Date() && e.status !== "COMPLETED" ? "text-red-500" : ""}>
-                      Due {new Date(e.dueAt).toLocaleDateString()}
+                  {e.dueAt && e.status !== "COMPLETED" && (
+                    <span className={isOverdue ? "text-danger" : ""}>
+                      Due {new Date(e.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </span>
                   )}
                   {e.status === "COMPLETED" && (
-                    <span className="flex items-center gap-1 text-green-600">
-                      <CheckCircle2 className="h-3 w-3" /> Completed
+                    <span className="flex items-center gap-1 text-success">
+                      <CheckCircle2 className="h-3 w-3" /> Done
                     </span>
                   )}
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-muted">{e.course._count.modules} modules · {e.course.assessments.length} quiz</span>
+                  <span className="text-xs text-accent group-hover:underline flex items-center gap-0.5">
+                    {e.status === "COMPLETED" ? "Review" : e.status === "IN_PROGRESS" ? "Continue" : "Start"}
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </Link>
+          );
+        })}
         {enrollments.length === 0 && (
-          <div className="col-span-3 text-center py-16 text-gray-400">
-            <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <div className="col-span-3 text-center py-16 text-text-muted">
+            <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-20" />
             <p>No courses assigned yet.</p>
           </div>
         )}
