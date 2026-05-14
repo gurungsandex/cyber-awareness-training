@@ -15,7 +15,7 @@ export const certificateWorker = new Worker(
           userId: attempt.userId, kind: "CERT_ISSUED",
           title: "Certificate issued",
           body: "Your certificate of completion is ready to download.",
-          url: "/employee/certificates",
+          link: "/employee/certificates",
         },
       });
     }

@@ -39,10 +39,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         where: { userId: ctx.user.id, courseId: assessment.courseId },
         data: { status: "COMPLETED", progressPct: 100, completedAt: new Date() },
       });
-      await certificateQueue.add("issue", { attemptId: attempt.id });
+      await certificateQueue.add("issue", { attemptId: attempt.id }).catch(() => {});
     } else {
       // Trigger remediation
-      await remediationQueue.add("enroll", { userId: ctx.user.id, trigger: "FAILED_ASSESSMENT" });
+      await remediationQueue.add("enroll", { userId: ctx.user.id, trigger: "FAILED_ASSESSMENT" }).catch(() => {});
     }
 
     await audit(ctx.user.id, "ASSESSMENT_SUBMIT", "Assessment", assessment.id, { scorePct, passed });

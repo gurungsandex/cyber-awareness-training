@@ -21,7 +21,7 @@ export const newHireWorker = new Worker(
         userId, kind: "NEW_HIRE_WELCOME",
         title: "Welcome to CyberShield",
         body: `You've been enrolled in ${mandatory.length} mandatory course(s). Please complete them within 14 days.`,
-        url: "/employee/courses",
+        link: "/employee/courses",
       },
     });
     console.log(`[newhire] Enrolled user ${userId} in ${mandatory.length} courses`);

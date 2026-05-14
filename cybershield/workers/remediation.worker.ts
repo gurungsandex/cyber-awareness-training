@@ -26,7 +26,7 @@ export const remediationWorker = new Worker(
         userId, kind: "SIM_REMEDIATION",
         title: "Remediation training assigned",
         body: `Following a recent simulation, you've been enrolled in "${remediationCourse.title}". Please complete it within 7 days.`,
-        url: `/employee/courses/${remediationCourse.id}`,
+        link: `/employee/courses/${remediationCourse.id}`,
       },
     });
 

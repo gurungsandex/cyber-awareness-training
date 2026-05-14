@@ -156,11 +156,12 @@ model Enrollment {
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseId     String
   course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  status       EnrollmentStatus @default(ENROLLED)
-  progressPct  Int              @default(0)
-  assignedAt   DateTime         @default(now())
-  dueAt        DateTime?
-  completedAt  DateTime?
+  status          EnrollmentStatus @default(ENROLLED)
+  progressPct     Int              @default(0)
+  assignedAt      DateTime         @default(now())
+  dueAt           DateTime?
+  completedAt     DateTime?
+  isRemediation   Boolean          @default(false)
   lessonCompletions LessonCompletion[]
   @@unique([userId, courseId])
 }
