@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/nav";
-import { LayoutDashboard, Users, BarChart3, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, BookOpen, GraduationCap } from "lucide-react";
 
 const items = [
   { href: "/manager", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
   { href: "/manager/team", label: "My Team", icon: <Users className="h-4 w-4" /> },
   { href: "/manager/courses", label: "Assign Courses", icon: <BookOpen className="h-4 w-4" /> },
+  { href: "/manager/my-training", label: "My Training", icon: <GraduationCap className="h-4 w-4" /> },
   { href: "/manager/reports", label: "Reports", icon: <BarChart3 className="h-4 w-4" /> },
 ];
 

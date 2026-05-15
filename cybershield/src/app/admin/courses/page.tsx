@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Clock, Users, FileQuestion, Layers, CheckCircle2, RefreshCw, ShieldCheck, Plus } from "lucide-react";
+import { BookOpen, Clock, Users, FileQuestion, Layers, CheckCircle2, RefreshCw, ShieldCheck, Eye } from "lucide-react";
 import { AssignCourseButton } from "./AssignCourseButton";
 import Link from "next/link";
 
@@ -99,11 +99,20 @@ export default async function AdminCoursesPage() {
                       )}
                     </div>
                   </div>
-                  <AssignCourseButton
-                    courseId={course.id}
-                    courseTitle={course.title}
-                    departments={departments.map((d) => ({ id: d.id, name: d.name }))}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/employee/courses/${course.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-elevated px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-colors"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Preview
+                    </Link>
+                    <AssignCourseButton
+                      courseId={course.id}
+                      courseTitle={course.title}
+                      departments={departments.map((d) => ({ id: d.id, name: d.name }))}
+                    />
+                  </div>
                 </div>
                 <CardTitle className="text-sm">{course.title}</CardTitle>
                 <p className="text-xs text-text-muted line-clamp-2 mt-1">{course.description}</p>

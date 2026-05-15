@@ -7,6 +7,8 @@ export default async function CoursePage({ params }: { params: { courseId: strin
   const session = await auth();
   if (!session?.user) redirect("/login");
   const userId = session.user.id!;
+  const role = (session.user as any).role as string;
+  const isAdmin = role === "ADMIN";
 
   const [enrollment, course] = await Promise.all([
     db.enrollment.findFirst({
@@ -39,8 +41,12 @@ export default async function CoursePage({ params }: { params: { courseId: strin
   ]);
 
   if (!course) notFound();
-  if (!enrollment) redirect("/employee/courses");
 
+  // Admin can preview any course without an enrollment
+  if (!enrollment && !isAdmin) redirect("/employee/courses");
+
+  const previewEnrollment = { id: "preview", status: "ENROLLED", progressPct: 0, simulationProgress: null };
+  const effectiveEnrollment = enrollment ?? previewEnrollment;
   const assessment = course.assessments[0] ?? null;
 
   return (
@@ -51,8 +57,9 @@ export default async function CoursePage({ params }: { params: { courseId: strin
         courseDescription={course.description}
         modules={course.modules as any}
         assessment={assessment as any}
-        enrollment={enrollment as any}
+        enrollment={effectiveEnrollment as any}
         simulationSchema={course.simulationSchema as any}
+        isPreview={isAdmin && !enrollment}
       />
     </div>
   );
