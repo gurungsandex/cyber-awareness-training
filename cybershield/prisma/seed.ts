@@ -131,18 +131,25 @@ async function main() {
   // ── Tenant ──────────────────────────────────────────────────────────────────
   const tenant = await db.tenant.upsert({
     where: { slug: "cybershield-demo" },
-    update: {},
+    update: { registrationToken: "dev-registration-token-cybershield-2026" },
     create: {
       slug: "cybershield-demo",
       name: "CyberShield Demo",
       primaryColor: "#2D6A4F",
-      // Fixed dev token — in production, rotate via the admin UI
       registrationToken: "dev-registration-token-cybershield-2026",
     },
   });
   console.log("✅ Tenant");
 
   // ── Departments ─────────────────────────────────────────────────────────────
+  // Migrate legacy departments that were created without a tenantId.
+  // First delete null-tenantId rows that already have a tenant-scoped copy (avoids unique-constraint conflict).
+  const tenantDeptNames = (await db.department.findMany({ where: { tenantId: tenant.id }, select: { name: true } }))
+    .map((d) => d.name);
+  await db.department.deleteMany({ where: { tenantId: null, name: { in: tenantDeptNames } } });
+  // Adopt any remaining unscoped departments into this tenant.
+  await db.department.updateMany({ where: { tenantId: null }, data: { tenantId: tenant.id } });
+
   async function upsertDept(name: string, description: string) {
     const existing = await db.department.findFirst({ where: { name, tenantId: tenant.id } });
     if (existing) return existing;

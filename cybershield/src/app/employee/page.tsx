@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { RiskGauge } from "@/components/RiskGauge";
-import { BookOpen, Shield, Bell, CheckCircle2, AlertTriangle, Inbox, Trophy, Clock, ChevronRight, ArrowRight, Mail } from "lucide-react";
+import { BookOpen, Shield, Bell, CheckCircle2, AlertTriangle, Inbox, Trophy, Clock, ChevronRight, ArrowRight } from "lucide-react";
 import { MicroAssessmentBanner } from "./micro-assessment/MicroAssessmentBanner";
 import { cn } from "@/lib/utils";
 

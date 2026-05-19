@@ -1,19 +1,25 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check, RefreshCw, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 interface Props {
-  registrationUrl: string | null;
+  registrationToken: string | null;
   tenantId: string | null;
 }
 
-export function RegistrationLinkPanel({ registrationUrl: initial, tenantId }: Props) {
+export function RegistrationLinkPanel({ registrationToken, tenantId }: Props) {
   const router = useRouter();
-  const [url, setUrl]         = useState<string | null>(initial);
-  const [copied, setCopied]   = useState(false);
+  const [url, setUrl]           = useState<string | null>(null);
+  const [copied, setCopied]     = useState(false);
   const [rotating, setRotating] = useState(false);
+
+  useEffect(() => {
+    if (registrationToken) {
+      setUrl(`${window.location.origin}/register/${registrationToken}`);
+    }
+  }, [registrationToken]);
 
   async function copyLink() {
     if (!url) return;

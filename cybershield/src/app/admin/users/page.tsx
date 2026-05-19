@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, ChevronRight } from "lucide-react";
@@ -31,15 +30,6 @@ export default async function UsersPage() {
       : db.tenant.findFirst({ select: { id: true, name: true, registrationToken: true } }),
   ]);
 
-  // Derive base URL from the incoming request host
-  const host = (await headers()).get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  const baseUrl = `${protocol}://${host}`;
-
-  const registrationUrl = tenant?.registrationToken
-    ? `${baseUrl}/register/${tenant.registrationToken}`
-    : null;
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -59,7 +49,7 @@ export default async function UsersPage() {
 
       {/* Registration link panel */}
       <RegistrationLinkPanel
-        registrationUrl={registrationUrl}
+        registrationToken={tenant?.registrationToken ?? null}
         tenantId={tenant?.id ?? null}
       />
 

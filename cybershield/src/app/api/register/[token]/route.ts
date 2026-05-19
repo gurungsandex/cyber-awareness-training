@@ -40,8 +40,10 @@ export async function POST(req: Request, { params }: { params: { token: string }
 
   const { name, email, jobTitle, departmentId, password } = parsed.data;
 
-  // Verify department belongs to this tenant
-  const dept = await db.department.findFirst({ where: { id: departmentId, tenantId: tenant.id } });
+  // Verify department belongs to this tenant (or is a legacy unscoped department)
+  const dept = await db.department.findFirst({
+    where: { id: departmentId, OR: [{ tenantId: tenant.id }, { tenantId: null }] },
+  });
   if (!dept) return NextResponse.json({ error: "Invalid department." }, { status: 400 });
 
   const existing = await db.user.findUnique({ where: { email } });
