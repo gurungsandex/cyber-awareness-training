@@ -4,7 +4,12 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
   const isLogin = nextUrl.pathname === "/login";
-  const isPublic = isLogin || nextUrl.pathname.startsWith("/api/auth") || nextUrl.pathname.startsWith("/_next") || nextUrl.pathname === "/";
+  const isPublic = isLogin
+    || nextUrl.pathname.startsWith("/register")
+    || nextUrl.pathname.startsWith("/api/register")
+    || nextUrl.pathname.startsWith("/api/auth")
+    || nextUrl.pathname.startsWith("/_next")
+    || nextUrl.pathname === "/";
 
   if (!session && !isPublic) {
     const url = new URL("/login", nextUrl);

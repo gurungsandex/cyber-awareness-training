@@ -1,18 +1,15 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/nav";
-import { LayoutDashboard, Users, Siren, BookOpen, BarChart3, ShieldAlert, ScrollText, Building2, KeyRound } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Siren, BarChart3 } from "lucide-react";
 
+// Five top-level sections — sub-pages are reachable via in-page navigation
 const items = [
-  { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-  { href: "/admin/users", label: "Users", icon: <Users className="h-4 w-4" /> },
-  { href: "/admin/groups", label: "Groups", icon: <Building2 className="h-4 w-4" /> },
-  { href: "/admin/manager-grants", label: "Manager Access", icon: <KeyRound className="h-4 w-4" /> },
-  { href: "/admin/courses", label: "Courses", icon: <BookOpen className="h-4 w-4" /> },
-  { href: "/admin/templates", label: "Sim Templates", icon: <ShieldAlert className="h-4 w-4" /> },
-  { href: "/admin/campaigns", label: "Campaigns", icon: <Siren className="h-4 w-4" /> },
-  { href: "/admin/audit", label: "Audit Log", icon: <ScrollText className="h-4 w-4" /> },
-  { href: "/admin/reports", label: "Reports", icon: <BarChart3 className="h-4 w-4" /> },
+  { href: "/admin",           label: "Dashboard",   icon: <LayoutDashboard className="h-4 w-4" /> },
+  { href: "/admin/users",     label: "People",      icon: <Users className="h-4 w-4" /> },
+  { href: "/admin/courses",   label: "Training",    icon: <BookOpen className="h-4 w-4" /> },
+  { href: "/admin/campaigns", label: "Simulations", icon: <Siren className="h-4 w-4" /> },
+  { href: "/admin/reports",   label: "Reports",     icon: <BarChart3 className="h-4 w-4" /> },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

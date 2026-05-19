@@ -1,22 +1,10 @@
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Siren } from "lucide-react";
+import { Siren, Info } from "lucide-react";
 import { CreateCampaignButton } from "./CreateCampaignButton";
-
-function statusVariant(s: string): any {
-  const m: Record<string, string> = {
-    DRAFT: "outline", SCHEDULED: "secondary", RUNNING: "default",
-    COMPLETED: "success", CANCELLED: "destructive",
-  };
-  return m[s] ?? "secondary";
-}
-
-const difficultyVariant: Record<string, any> = {
-  EASY: "success", MEDIUM: "warning", HARD: "destructive",
-};
+import { CampaignsTable } from "./CampaignsTable";
 
 export default async function CampaignsPage() {
   const session = await auth();
@@ -40,12 +28,21 @@ export default async function CampaignsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-text-primary">Campaigns</h1>
+          <h1 className="text-2xl font-heading font-bold text-text-primary">Simulations</h1>
           <p className="text-text-secondary text-sm mt-1">
-            {campaigns.length} phishing simulation campaign(s) · {templates.length} templates available
+            {campaigns.length} campaign(s) · {templates.length} templates available
           </p>
         </div>
         <CreateCampaignButton templates={templates} />
+      </div>
+
+      {/* Visibility hint */}
+      <div className="mb-5 rounded-card border border-border bg-elevated px-5 py-3.5 flex items-start gap-3">
+        <Info className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-text-secondary">
+          The <strong className="text-text-primary">Manager Visibility</strong> toggle controls whether managers can see and use a campaign.
+          When disabled, the campaign is visible only to admins.
+        </p>
       </div>
 
       {campaigns.length === 0 ? (
@@ -62,39 +59,16 @@ export default async function CampaignsPage() {
               All Campaigns
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  {["Campaign", "Template", "Type", "Difficulty", "Scheduled", "Interactions", "Status"].map((h) => (
-                    <th key={h} className="text-left pb-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {campaigns.map((c) => (
-                  <tr key={c.id} className="hover:bg-elevated/40">
-                    <td className="py-3 pr-4 font-medium text-text-primary max-w-48">
-                      <p className="truncate">{c.name}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-text-secondary max-w-40">
-                      <p className="truncate">{c.template.name}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-text-muted whitespace-nowrap text-xs">{c.template.type.replace("_", " ")}</td>
-                    <td className="py-3 pr-4">
-                      <Badge variant={difficultyVariant[c.template.difficulty]}>{c.template.difficulty}</Badge>
-                    </td>
-                    <td className="py-3 pr-4 text-text-muted whitespace-nowrap text-xs">
-                      {new Date(c.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="py-3 pr-4 text-text-secondary">{c._count.interactions}</td>
-                    <td className="py-3">
-                      <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <CardContent className="pt-0">
+            <CampaignsTable initial={campaigns.map((c) => ({
+              id: c.id,
+              name: c.name,
+              status: c.status,
+              visibleToManagers: c.visibleToManagers,
+              scheduledAt: c.scheduledAt.toISOString(),
+              template: { name: c.template.name, type: c.template.type, difficulty: c.template.difficulty },
+              _count: c._count,
+            }))} />
           </CardContent>
         </Card>
       )}

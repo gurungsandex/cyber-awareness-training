@@ -1,9 +1,12 @@
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Users, Building2, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { RegistrationLinkPanel } from "./RegistrationLinkPanel";
 
 function roleVariant(role: string): "default" | "secondary" | "destructive" {
   if (role === "ADMIN") return "destructive";
@@ -15,18 +18,51 @@ export default async function UsersPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
-  const users = await db.user.findMany({
-    where: { deletedAt: null },
-    include: { department: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const tenantId = (session.user as any).tenantId ?? null;
+
+  const [users, tenant] = await Promise.all([
+    db.user.findMany({
+      where: { deletedAt: null },
+      include: { department: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    tenantId
+      ? db.tenant.findUnique({ where: { id: tenantId }, select: { id: true, name: true, registrationToken: true } })
+      : db.tenant.findFirst({ select: { id: true, name: true, registrationToken: true } }),
+  ]);
+
+  // Derive base URL from the incoming request host
+  const host = (await headers()).get("host") ?? "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  const registrationUrl = tenant?.registrationToken
+    ? `${baseUrl}/register/${tenant.registrationToken}`
+    : null;
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-heading font-bold text-text-primary">Users</h1>
-        <p className="text-text-secondary text-sm mt-1">{users.length} users registered.</p>
+    <div className="p-6 space-y-6">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-text-primary">People</h1>
+          <p className="text-text-secondary text-sm mt-1">{users.length} users registered.</p>
+        </div>
+        <Link
+          href="/admin/departments"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-elevated px-3 py-2 text-sm font-medium text-text-secondary hover:border-accent/40 hover:text-accent transition-colors"
+        >
+          <Building2 className="h-4 w-4" />
+          Manage Departments
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
+
+      {/* Registration link panel */}
+      <RegistrationLinkPanel
+        registrationUrl={registrationUrl}
+        tenantId={tenant?.id ?? null}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

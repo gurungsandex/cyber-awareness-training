@@ -128,18 +128,32 @@ async function upsertTemplate(
 async function main() {
   console.log("🌱 Seeding CyberShield...\n");
 
+  // ── Tenant ──────────────────────────────────────────────────────────────────
+  const tenant = await db.tenant.upsert({
+    where: { slug: "cybershield-demo" },
+    update: {},
+    create: {
+      slug: "cybershield-demo",
+      name: "CyberShield Demo",
+      primaryColor: "#2D6A4F",
+      // Fixed dev token — in production, rotate via the admin UI
+      registrationToken: "dev-registration-token-cybershield-2026",
+    },
+  });
+  console.log("✅ Tenant");
+
   // ── Departments ─────────────────────────────────────────────────────────────
   async function upsertDept(name: string, description: string) {
-    const existing = await db.department.findFirst({ where: { name, tenantId: null } });
+    const existing = await db.department.findFirst({ where: { name, tenantId: tenant.id } });
     if (existing) return existing;
-    return db.department.create({ data: { name, description } });
+    return db.department.create({ data: { name, description, tenantId: tenant.id } });
   }
   const [it, finance, hr, sales, legal] = await Promise.all([
-    upsertDept("IT", "Information Technology"),
+    upsertDept("IT",      "Information Technology"),
     upsertDept("Finance", "Finance & Accounting"),
-    upsertDept("HR", "Human Resources"),
-    upsertDept("Sales", "Sales & Marketing"),
-    upsertDept("Legal", "Legal & Compliance"),
+    upsertDept("HR",      "Human Resources"),
+    upsertDept("Sales",   "Sales & Marketing"),
+    upsertDept("Legal",   "Legal & Compliance"),
   ]);
   console.log("✅ Departments");
 
@@ -151,30 +165,30 @@ async function main() {
   await db.user.upsert({
     where: { email: "admin@cybershield.local" },
     update: {},
-    create: { email: "admin@cybershield.local", name: "Platform Admin", passwordHash: adminHash, role: Role.ADMIN },
+    create: { email: "admin@cybershield.local", name: "Platform Admin", passwordHash: adminHash, role: Role.ADMIN, tenantId: tenant.id },
   });
   await db.user.upsert({
     where: { email: "manager@cybershield.local" },
     update: {},
-    create: { email: "manager@cybershield.local", name: "Jane Manager", passwordHash: mgrHash, role: Role.MANAGER, departmentId: it.id },
+    create: { email: "manager@cybershield.local", name: "Jane Manager", passwordHash: mgrHash, role: Role.MANAGER, departmentId: it.id, tenantId: tenant.id },
   });
 
   const employees: [string, string, string][] = [
-    ["Alice Chen", "alice.chen@cybershield.local", it.id],
-    ["Bob Smith", "bob.smith@cybershield.local", finance.id],
-    ["Carol Jones", "carol.jones@cybershield.local", hr.id],
-    ["David Patel", "david.patel@cybershield.local", sales.id],
-    ["Eve Müller", "eve.muller@cybershield.local", it.id],
-    ["Frank Torres", "frank.torres@cybershield.local", finance.id],
-    ["Grace Kim", "grace.kim@cybershield.local", legal.id],
-    ["Henry Osei", "henry.osei@cybershield.local", sales.id],
+    ["Alice Chen",   "alice.chen@cybershield.local",   it.id],
+    ["Bob Smith",    "bob.smith@cybershield.local",     finance.id],
+    ["Carol Jones",  "carol.jones@cybershield.local",   hr.id],
+    ["David Patel",  "david.patel@cybershield.local",   sales.id],
+    ["Eve Müller",   "eve.muller@cybershield.local",    it.id],
+    ["Frank Torres", "frank.torres@cybershield.local",  finance.id],
+    ["Grace Kim",    "grace.kim@cybershield.local",     legal.id],
+    ["Henry Osei",   "henry.osei@cybershield.local",    sales.id],
   ];
 
   for (const [name, email, deptId] of employees) {
     await db.user.upsert({
       where: { email },
       update: {},
-      create: { email, name, passwordHash: empHash, role: Role.EMPLOYEE, departmentId: deptId },
+      create: { email, name, passwordHash: empHash, role: Role.EMPLOYEE, departmentId: deptId, tenantId: tenant.id },
     });
   }
   console.log("✅ Users");
@@ -1139,6 +1153,445 @@ Security teams understand that mistakes happen. Employees who report incidents q
   ]);
 
   console.log("✅ Courses, modules, lessons & assessments (8 courses)");
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  SAMPLE EXERCISE 9: General > Phishing — Business Email Compromise
+  // ════════════════════════════════════════════════════════════════════════════
+
+  await upsertCourse("course-bec-wire-fraud", {
+    title: "Business Email Compromise: Recognising Wire Fraud",
+    description:
+      "Business Email Compromise (BEC) is the costliest form of cybercrime — over $50 billion lost globally since 2013. This exercise teaches you to recognise BEC attempts, verify unusual requests, and protect your organisation from fraudulent wire transfers and payroll redirects.",
+    isMandatory: false,
+    passMark: 80,
+    estimatedMin: 20,
+    complianceFrameworks: ["GENERAL", "NIST_CSF", "SOC2"],
+    track: "PHISHING_DEFENSE",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
+  });
+
+  const modBec1 = await upsertModule("mod-bec-1", "course-bec-wire-fraud", "What Is Business Email Compromise?", 0);
+
+  await upsertLesson(
+    "les-bec-1-1",
+    modBec1.id,
+    0,
+    "Overview and Real-World Scale",
+    `# Business Email Compromise: The Costliest Cyber Threat You May Not Have Heard Of
+
+## What Is Business Email Compromise?
+
+Business Email Compromise (BEC) is a type of fraud in which an attacker uses email — either a compromised real account or a convincing lookalike address — to impersonate a trusted person and trick employees into sending money, changing bank details, or sharing sensitive data.
+
+Unlike ransomware, BEC rarely involves malware. There are no attachments to scan, no suspicious links to block. The weapon is the email itself: a message that looks exactly like one you might receive from your CEO, a supplier, or a payroll system.
+
+## The Scale of the Problem
+
+The FBI's Internet Crime Complaint Center (IC3) recorded $2.9 billion in adjusted losses from BEC in 2023 alone — making it the highest-loss cybercrime category for the seventh consecutive year. Since 2016, cumulative global losses have exceeded $50 billion.
+
+These are not losses from technical exploits. They are losses from employees who received a convincing email and acted on it without verification.
+
+## Why BEC Is So Effective
+
+BEC exploits legitimate email infrastructure and human psychology simultaneously:
+
+- The sender name looks right, even if the email address is slightly wrong
+- The request is framed as urgent and confidential, suppressing the instinct to verify
+- The instructions specifically block your usual verification steps ("I'm in meetings — don't call")
+- One well-targeted email can cost an organisation millions within hours
+
+The 2019 Toyota Boshoku case resulted in a loss of approximately $37 million from a single BEC email. The 2020 Puerto Rico government case lost $2.6 million. In 2021, the Levitas Capital hedge fund lost $8.7 million and subsequently closed.
+
+These are not isolated incidents. BEC attacks are methodical, researched, and delivered at scale.`,
+    8
+  );
+
+  await upsertLesson(
+    "les-bec-1-2",
+    modBec1.id,
+    1,
+    "How Attackers Research and Craft BEC Attacks",
+    `# How Attackers Build a BEC Attack
+
+## Step 1: Reconnaissance
+
+Before sending a single email, attackers spend time learning about your organisation. They use:
+
+- **LinkedIn:** Job titles, reporting lines, who handles finance, who can authorise payments
+- **Company websites:** Executive names, email formats (firstname.lastname@company.com)
+- **Press releases and filings:** Acquisition announcements, quarterly results, new vendor relationships
+- **Previous data breaches:** Email addresses and sometimes passwords from compromised databases
+
+A BEC attacker targeting your finance team may know your CFO's name, your AP clerk's name, that you recently changed payroll providers, and that your CEO is travelling this week. All of this is publicly available.
+
+## Step 2: Account Compromise or Lookalike Setup
+
+Attackers either:
+
+**Compromise a real account** — using phished or purchased credentials, they gain access to a genuine executive's email account. Emails sent from a real account pass every technical check. This is the hardest variant to detect.
+
+**Create a lookalike domain** — a domain registered to closely mimic the real one:
+- company.com becomes company-corp.com, or cornpany.com (rn looks like m)
+- The email address may be identical to the real one except for this domain
+
+## Step 3: Delivery and Manipulation
+
+The email arrives in a plausible context. Common scenarios include:
+
+- CEO requests an urgent wire transfer to a new account for a confidential acquisition
+- Supplier emails updated banking details just before a scheduled payment
+- HR informs payroll of a direct deposit change for a named employee
+- A new vendor sends their first invoice with routing details
+
+All of these follow predictable, real business processes — which is exactly why they work.
+
+## Step 4: Urgency and Verification Blocks
+
+Every effective BEC email includes two elements:
+
+1. **Urgency** — "Today only", "before close of business", "the deal falls through if we miss this window"
+2. **A reason not to verify** — "I'm unavailable by phone", "this is confidential — don't discuss", "trust me on this one"
+
+These two elements are the clearest red flags in any BEC attempt. Legitimate business requests do not come with built-in instructions to bypass your verification process.`,
+    9
+  );
+
+  const modBec2 = await upsertModule("mod-bec-2", "course-bec-wire-fraud", "Recognition and Response", 1);
+
+  await upsertLesson(
+    "les-bec-2-1",
+    modBec2.id,
+    0,
+    "Red Flags, Verification, and What to Do If You Are Targeted",
+    `# Recognising, Verifying, and Responding to BEC Attempts
+
+## Universal Red Flags in BEC Emails
+
+Regardless of who the email appears to be from, treat the following as warning signs:
+
+1. **Request to send money or change banking details** — any such request arriving by email alone should be independently verified before action
+2. **Urgency with a reason to bypass normal process** — "urgent", "today", combined with "don't call", "keep this confidential"
+3. **Slightly wrong sender email address** — check the full address, not just the display name
+4. **Request that skips your normal approval chain** — "just between us", "don't loop in finance"
+5. **New bank account details** — legitimate suppliers and payroll systems very rarely change banking details; when they do, they follow a formal process with written confirmation and callback verification
+
+## How to Verify
+
+The correct response to any unusual financial request is to verify it through a channel you control — not through the email.
+
+**Call the requester on a number you already know** — a number from your company directory, from a previous email thread, or from the organisation's official website. Do not use a number included in the suspicious email.
+
+If the request is from your CEO, call their mobile directly. If the request is from a supplier, call their main office. If the request is from HR, walk to the HR department.
+
+**Never verify by replying to the suspicious email.** The attacker controls that inbox.
+
+## The Correct Organisational Response
+
+Most organisations have financial controls specifically designed to prevent this:
+
+- Dual authorisation requirements for transfers above a threshold
+- Out-of-band verification for new banking details
+- Callback procedures for payroll changes
+
+These controls exist because BEC is a known and frequent attack. Following the procedure — even when the CEO is "waiting" — is the correct behaviour. No senior leader should override financial controls by email.
+
+If a financial control blocks an urgent request, the requestor can pick up the phone.
+
+## What to Do If You Suspect You Have Already Complied
+
+If you have already transferred funds or changed banking details in response to what may have been a BEC email:
+
+1. Contact your bank immediately to request a recall of the payment — speed is critical; banks can sometimes reverse recent transfers
+2. Report the incident to your organisation's security and finance teams immediately
+3. Report the incident to your national law enforcement authority (FBI's IC3 in the US, Action Fraud in the UK)
+4. Preserve all related emails as evidence — do not delete anything
+5. Do not notify the attacker that you have identified the fraud — they may have other access
+
+Time is the most critical variable. Banks have reported successfully recalling funds in cases where the victim reported within hours. In cases where reporting was delayed by days, recovery was rare.`,
+    10
+  );
+
+  const asmBec = await upsertAssessment("asm-bec-wire-fraud", "course-bec-wire-fraud", "BEC Knowledge Check", 80);
+  await upsertQuestions("asm-bec-wire-fraud", [
+    {
+      id: "q-bec-1", orderIndex: 0,
+      text: "You receive an email appearing to be from your CEO asking you to wire £40,000 to a new account today for a confidential acquisition. The email says 'I'm in board meetings all day — please don't call, just get this done.' What do you do?",
+      options: [
+        { id: "a", text: "Wire the funds — it is from the CEO and marked confidential" },
+        { id: "b", text: "Reply to the email to get more details before acting" },
+        { id: "c", text: "Call the CEO directly on their known mobile number to verify, regardless of the instruction not to" },
+        { id: "d", text: "Ask a colleague whether to proceed" },
+      ],
+      correctOptionId: "c",
+      explanation: "The instruction not to call is itself a red flag. Legitimate financial requests can always wait for a brief phone verification. Call the CEO on a number you already know — not one from the email. If the request is genuine, a 2-minute call will confirm it. If it is fraud, you have just prevented a significant loss.",
+    },
+    {
+      id: "q-bec-2", orderIndex: 1,
+      text: "Your regular supplier emails to say they have changed their bank details and asks you to update your records before the next payment. What is the safest first step?",
+      options: [
+        { id: "a", text: "Update the bank details immediately — you recognise the supplier" },
+        { id: "b", text: "Reply to the email confirming you have received the new details" },
+        { id: "c", text: "Call the supplier on their previously known phone number to confirm the change independently" },
+        { id: "d", text: "Wait to see if the next invoice also shows the new details" },
+      ],
+      correctOptionId: "c",
+      explanation: "Fraudulent banking detail changes are one of the most common BEC variants. Always verify any change of payment details by calling the supplier on a number from your existing records — never use contact details from the email requesting the change. Replying to the email confirms nothing because the attacker controls the inbox.",
+    },
+    {
+      id: "q-bec-3", orderIndex: 2,
+      text: "Which two elements together are the strongest indicators that a financial email request may be a BEC attempt?",
+      options: [
+        { id: "a", text: "The email uses formal language and includes a company logo" },
+        { id: "b", text: "Urgency combined with a specific instruction not to verify through normal channels" },
+        { id: "c", text: "The email arrives on a Friday afternoon" },
+        { id: "d", text: "The amount requested is larger than usual" },
+      ],
+      correctOptionId: "b",
+      explanation: "Urgency plus a built-in reason to skip verification (don't call, keep this confidential, I'm unavailable) is the defining pattern of BEC. Legitimate business requests can withstand a brief verification call. Fraudulent ones cannot — which is why attackers work to prevent it.",
+    },
+    {
+      id: "q-bec-4", orderIndex: 3,
+      text: "You have just wired funds in response to what you now believe was a BEC email. What is the single most time-critical first action?",
+      options: [
+        { id: "a", text: "Email your manager to let them know" },
+        { id: "b", text: "Contact your bank immediately to request a transfer recall" },
+        { id: "c", text: "Report it to the police and wait for guidance" },
+        { id: "d", text: "Document what happened before doing anything else" },
+      ],
+      correctOptionId: "b",
+      explanation: "Banks have a narrow window in which they can recall a fraudulent transfer — sometimes as little as a few hours. Calling your bank immediately is the most time-critical action. Simultaneously notify your security and finance teams. Police and documentation are also necessary but come after the bank call.",
+    },
+    {
+      id: "q-bec-5", orderIndex: 4,
+      text: "An attacker has registered the domain 'company-finance.net' to impersonate your organisation. They send an email from 'cfo@company-finance.net'. What is the best way to identify this as fraudulent before acting?",
+      options: [
+        { id: "a", text: "Check whether the email has a professional signature" },
+        { id: "b", text: "See whether the email was sent during business hours" },
+        { id: "c", text: "Read the full sender email address carefully and compare it against your known CFO email address" },
+        { id: "d", text: "Check whether the email was flagged by spam filters" },
+      ],
+      correctOptionId: "c",
+      explanation: "Email display names can be set to anything. Always read the full email address — the part after the @ sign. 'company-finance.net' is not your company's domain. Spam filters do not reliably catch BEC emails because the domain may be legitimately registered and the email contains no malicious links.",
+    },
+  ]);
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  SAMPLE EXERCISE 10: Healthcare > HIPAA — The Minimum Necessary Standard
+  // ════════════════════════════════════════════════════════════════════════════
+
+  await upsertCourse("course-hipaa-minimum-necessary", {
+    title: "HIPAA and the Minimum Necessary Standard",
+    description:
+      "The Minimum Necessary Standard is one of the most frequently violated HIPAA requirements. This exercise explains what it means, how it applies to everyday tasks in a healthcare setting, and what happens when it is not followed. Designed for clinical and administrative healthcare staff.",
+    isMandatory: false,
+    passMark: 80,
+    estimatedMin: 22,
+    complianceFrameworks: ["HIPAA", "GENERAL"],
+    track: "DATA_PRIVACY",
+    isRecurring: true,
+    recurringIntervalMonths: 12,
+  });
+
+  const modHipaa1 = await upsertModule("mod-hipaa-1", "course-hipaa-minimum-necessary", "Understanding HIPAA and PHI", 0);
+
+  await upsertLesson(
+    "les-hipaa-1-1",
+    modHipaa1.id,
+    0,
+    "Overview: What HIPAA Requires and Why It Exists",
+    `# HIPAA and Patient Privacy: The Foundation
+
+## What Is HIPAA?
+
+The Health Insurance Portability and Accountability Act (HIPAA) was signed into United States federal law in 1996. Its Privacy Rule, which took effect in 2003, establishes the national standard for protecting individuals' medical records and other personal health information (PHI — Protected Health Information).
+
+Any organisation that creates, receives, maintains, or transmits PHI in the course of providing or paying for healthcare is a Covered Entity under HIPAA. This includes hospitals, clinics, physician practices, pharmacies, and health insurance plans. Business Associates — contractors who handle PHI on behalf of covered entities — are also bound by HIPAA requirements.
+
+HIPAA is not a bureaucratic formality. It exists because the unauthorised exposure of health information causes real harm to real people: discrimination in employment or insurance, relationship damage, stigma around mental health or substance abuse diagnoses, and violations of the most intimate aspects of a person's life.
+
+## What Is Protected Health Information?
+
+Protected Health Information (PHI) is any information that:
+
+- Relates to a person's past, present, or future physical or mental health condition, or to the payment for healthcare; AND
+- Can be used to identify the individual
+
+Individually identifiable elements include: names, geographic data (including zip code), dates (other than year), phone numbers, email addresses, social security numbers, medical record numbers, and in many cases even photographs.
+
+PHI is protected regardless of format — paper, electronic, verbal, or any other medium.
+
+## The Core HIPAA Privacy Requirements
+
+HIPAA's Privacy Rule establishes that covered entities may use and disclose PHI only in specifically defined circumstances. The most important principles for day-to-day practice are:
+
+- **Minimum Necessary:** Use or disclose only the PHI needed to accomplish the specific purpose
+- **Notice of Privacy Practices:** Patients must be informed of how their information is used
+- **Patient Rights:** Patients have the right to access, amend, and receive an accounting of disclosures of their PHI
+- **Safeguards:** Administrative, physical, and technical safeguards must protect PHI from unauthorised access
+
+Enforcement is carried out by the Department of Health and Human Services Office for Civil Rights (OCR). Fines range from $100 per violation (unknowing violation) to $50,000 per violation (wilful neglect) with annual maximums of $1.9 million per violation category.`,
+    8
+  );
+
+  await upsertLesson(
+    "les-hipaa-1-2",
+    modHipaa1.id,
+    1,
+    "The Minimum Necessary Standard: What It Means in Practice",
+    `# The Minimum Necessary Standard
+
+## What the Rule Requires
+
+The Minimum Necessary Standard (45 CFR 164.502(b)) requires that covered entities make reasonable efforts to limit PHI use, disclosure, and requests to the minimum necessary to accomplish the intended purpose.
+
+In plain terms: if you need a patient's medication list to complete a specific task, you should not access — and should not be able to access — their full psychiatric history, their HIV status, their previous hospital admissions, or any other information not required for that task.
+
+This applies to:
+- Uses of PHI within the organisation (employees accessing patient records)
+- Disclosures of PHI outside the organisation (sharing records with another provider or insurer)
+- Requests for PHI from other organisations
+
+## Everyday Violations of the Minimum Necessary Standard
+
+The most common HIPAA violations in healthcare settings involve staff accessing records they have no clinical or administrative reason to view. The OCR reports consistently identify "impermissible access" as among the most frequently investigated complaint categories.
+
+**Examples of minimum necessary violations:**
+
+- A nurse accessing the records of a celebrity patient admitted to their hospital, not because they are treating the patient, but out of curiosity
+- An administrator looking up the record of a family member, former colleague, or neighbour without a work-related reason
+- A clinical team requesting a patient's complete 10-year medical history from a referring provider when only the last 12 months of records are relevant to the referral
+- Sharing a full patient chart with a specialist when only the relevant section (for example, cardiology results) is needed for the consultation
+
+The 2014 Advocate Health Care settlement ($5.55 million) and the 2018 Anthem settlement ($16 million) both involved failures to limit access to the minimum necessary — both resulted from employees accessing far more records than their roles required.
+
+## Role-Based Access and Your Responsibility
+
+Compliant organisations implement role-based access controls: your system credentials should grant you access only to the records and data types your role requires. This is the technical implementation of the minimum necessary standard.
+
+However, technical access controls are not a complete defence. You have a personal professional obligation to access only records you have a legitimate reason to view — even if the system does not technically prevent broader access.
+
+"I had access to it" is not a defence under HIPAA. Access logs are reviewed, and pattern analysis can identify unusual access behaviour, including accessing records of colleagues, public figures, or patients outside your care team.`,
+    9
+  );
+
+  const modHipaa2 = await upsertModule("mod-hipaa-2", "course-hipaa-minimum-necessary", "Application and Breach Response", 1);
+
+  await upsertLesson(
+    "les-hipaa-2-1",
+    modHipaa2.id,
+    0,
+    "Scenarios, Breach Obligations, and What to Do If You Make a Mistake",
+    `# Applying the Minimum Necessary Standard — and Responding to Breaches
+
+## How to Apply Minimum Necessary in Common Situations
+
+**Scenario 1: A colleague asks you to pull a patient's chart while they are with another patient.**
+Ask what specific information they need. Pull only that section. A physician covering a colleague's patients needs active medication lists and current diagnoses — not the patient's complete psychiatric history or prior surgical records from a different facility.
+
+**Scenario 2: A patient's family member calls and asks for an update on their condition.**
+Unless the patient has explicitly authorised disclosure to that individual, you may only confirm whether the patient is receiving care. You may not disclose diagnosis, treatment, or prognosis — even to a spouse, parent, or adult child — without the patient's prior written authorisation or in specific emergency circumstances.
+
+**Scenario 3: A law firm sends a request for a patient's records in connection with litigation.**
+Do not release records without proper legal process (a valid subpoena or court order) and review by your Privacy Officer. Release only the specific records identified in the legal request — not the full medical history. Route all such requests through your organisation's legal or compliance department.
+
+**Scenario 4: You are asked to share records with another provider for treatment purposes.**
+Treatment is one of the permitted uses under HIPAA. However, even for treatment, you should share only the records relevant to the treatment being provided. A dermatology referral does not require access to substance abuse treatment records.
+
+## What Constitutes a HIPAA Breach?
+
+A breach is any impermissible use or disclosure of PHI that compromises the privacy or security of the information. Common breach scenarios include:
+
+- Emailing PHI to the wrong recipient
+- Mailing a paper record to the wrong address
+- PHI visible on an unattended screen in a public area
+- Loss or theft of a device containing unencrypted PHI
+- An employee accessing records without a legitimate purpose
+
+## Breach Notification Requirements
+
+Under the HIPAA Breach Notification Rule:
+
+- **Covered entities must notify affected individuals** within 60 days of discovering a breach
+- **Covered entities must notify HHS** — breaches affecting 500 or more individuals must be reported promptly; smaller breaches must be reported annually
+- **Breaches affecting 500+ individuals in a state or jurisdiction** require notification to prominent media outlets
+- **Business Associates must notify** their covered entity partners without unreasonable delay and within 60 days of discovery
+
+The 60-day clock starts when any employee of the organisation first knows — or should reasonably have known — about the breach.
+
+## If You Believe a Breach Has Occurred
+
+Report it to your Privacy Officer or Compliance team immediately. Do not delay to assess severity yourself — the OCR has taken the position that the clock starts when you first become aware, not when you finish your own investigation.
+
+Do not attempt to cover up or minimise a breach. Organisations that self-report promptly and cooperate fully with investigations consistently receive more favourable enforcement outcomes than those that delay, conceal, or minimise. The $16 million Anthem fine was compounded by the scale and duration of the breach combined with pre-existing known vulnerabilities that had not been addressed.`,
+    10
+  );
+
+  const asmHipaa = await upsertAssessment("asm-hipaa-minimum-necessary", "course-hipaa-minimum-necessary", "HIPAA Knowledge Check", 80);
+  await upsertQuestions("asm-hipaa-minimum-necessary", [
+    {
+      id: "q-hipaa-1", orderIndex: 0,
+      text: "A celebrity is admitted to your hospital. You are not on their care team, but you are curious about their condition. You have system access to pull their record. Should you?",
+      options: [
+        { id: "a", text: "Yes — you have legitimate system access and are just looking" },
+        { id: "b", text: "Yes — as a hospital employee you are entitled to see any patient record" },
+        { id: "c", text: "No — accessing records without a work-related reason violates HIPAA regardless of technical access" },
+        { id: "d", text: "Only if you do not share what you see with others" },
+      ],
+      correctOptionId: "c",
+      explanation: "The Minimum Necessary Standard requires a legitimate work-related reason to access PHI. Technical access is not the same as authorised access. High-profile patient accesses are among the most commonly investigated HIPAA violations. Access logs capture every record view.",
+    },
+    {
+      id: "q-hipaa-2", orderIndex: 1,
+      text: "A patient's adult daughter calls asking for an update on her mother's surgical procedure. The mother has not provided written authorisation. What should you do?",
+      options: [
+        { id: "a", text: "Provide the update — she is immediate family" },
+        { id: "b", text: "Confirm the patient is receiving care but do not disclose clinical details without patient authorisation" },
+        { id: "c", text: "Ask her to come in person and then share the information" },
+        { id: "d", text: "Transfer her to the surgeon to handle" },
+      ],
+      correctOptionId: "b",
+      explanation: "HIPAA does not automatically allow disclosure to family members — even immediate family. Without the patient's prior authorisation, you may confirm that the patient is receiving care but may not disclose clinical details unless the patient is incapacitated and you determine it is in their best interest. The correct and safest response is to note the contact and arrange for the patient to provide authorisation.",
+    },
+    {
+      id: "q-hipaa-3", orderIndex: 1,
+      text: "You are preparing a referral for a patient seeing a cardiologist. Which records should you send?",
+      options: [
+        { id: "a", text: "The patient's complete medical history going back 10 years" },
+        { id: "b", text: "Only the records directly relevant to the cardiac referral" },
+        { id: "c", text: "Everything you have — the cardiologist can decide what is relevant" },
+        { id: "d", text: "Whatever the referral template includes by default" },
+      ],
+      correctOptionId: "b",
+      explanation: "The Minimum Necessary Standard applies to disclosures for treatment as well as all other purposes. Send only what is directly relevant to the specific referral. A cardiologist does not need psychiatric records, substance abuse history, or unrelated surgical history in order to perform a cardiac evaluation.",
+    },
+    {
+      id: "q-hipaa-4", orderIndex: 2,
+      text: "You accidentally email a patient's discharge summary to the wrong address. You realise your mistake immediately. What should you do?",
+      options: [
+        { id: "a", text: "Email the wrong recipient asking them to delete it — the problem is resolved" },
+        { id: "b", text: "Tell your supervisor only if the recipient responds to confirm they saw it" },
+        { id: "c", text: "Report it to your Privacy Officer immediately — this is a HIPAA breach regardless of whether harm occurs" },
+        { id: "d", text: "Wait 24 hours to see whether the email bounces before escalating" },
+      ],
+      correctOptionId: "c",
+      explanation: "An impermissible disclosure of PHI is a HIPAA breach the moment it occurs — harm does not need to be proven. The 60-day notification clock starts when the breach is discovered. Prompt internal reporting allows your organisation to assess, notify affected individuals, and meet regulatory obligations.",
+    },
+    {
+      id: "q-hipaa-5", orderIndex: 3,
+      text: "Under HIPAA's Breach Notification Rule, how quickly must covered entities notify affected individuals of a breach?",
+      options: [
+        { id: "a", text: "Within 24 hours" },
+        { id: "b", text: "Within 30 days" },
+        { id: "c", text: "Within 60 days of discovering the breach" },
+        { id: "d", text: "Within 90 days" },
+      ],
+      correctOptionId: "c",
+      explanation: "HIPAA's Breach Notification Rule requires covered entities to notify affected individuals without unreasonable delay and within 60 days of discovering the breach. For breaches affecting 500 or more individuals in a state, prominent media notification is also required. HHS must be notified promptly for large breaches and annually for smaller ones.",
+    },
+  ]);
+
+  console.log("✅ Sample exercises 9 & 10 (BEC Wire Fraud + HIPAA Minimum Necessary)");
 
   // ════════════════════════════════════════════════════════════════════════════
   //  SIMULATION TEMPLATES
