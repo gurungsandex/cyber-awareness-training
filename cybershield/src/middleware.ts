@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { isTrustedOrigin } from "@/lib/csrf";
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
@@ -10,6 +11,10 @@ export default auth((req) => {
     || nextUrl.pathname.startsWith("/api/auth")
     || nextUrl.pathname.startsWith("/_next")
     || nextUrl.pathname === "/";
+
+  if (!isTrustedOrigin(req)) {
+    return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
+  }
 
   if (!session && !isPublic) {
     const url = new URL("/login", nextUrl);
