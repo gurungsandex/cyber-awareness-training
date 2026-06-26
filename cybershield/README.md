@@ -133,6 +133,15 @@ cybershield/
 
 ---
 
+## ⏪ Deployment & rollback
+
+- **Roll forward, don't roll back schemas.** `prisma migrate deploy` only applies new migrations — it has no automatic "down." If a migration needs to be undone, write and apply a new corrective migration, or restore the `cs_postgres_data` volume from the last backup taken before the bad deploy.
+- **Roll back the app image quickly.** Tag images/builds by git SHA. To roll back: `docker compose pull web=<previous-tag>` (or rebuild from the previous commit) then `docker compose up -d web workers`, skipping `prisma migrate deploy` unless the previous version expects an older schema.
+- **Always back up before migrating.** Snapshot the `cs_postgres_data` volume (or run `pg_dump`) immediately before any `prisma migrate deploy` in production, so a bad migration can be undone by restoring the snapshot rather than improvising a down-migration under pressure.
+- **Zero-downtime note.** This stack has no blue/green or canary support out of the box — `docker compose up -d --build` briefly drops the `web` container. For zero-downtime deploys, run two `web` replicas behind nginx/a load balancer and roll them one at a time.
+
+---
+
 ## 🧪 Useful scripts
 
 ```bash
