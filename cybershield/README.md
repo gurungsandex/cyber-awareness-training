@@ -121,8 +121,7 @@ cybershield/
 
 - **No outbound mail.** Simulations are delivered via the in-app `/employee/inbox`, never to real email. No leakage risk.
 - **No real credentials stored.** The fake login page sends only `usernameLength`/`passwordLength`. The actual values never reach the server.
-- **Audit log on every privileged mutation** (user create/update/delete, course changes, campaign launches, assessment submissions).
-- **Last-admin protection** prevents you from deleting your only admin account.
+- **Audit log on every privileged mutation** (user creation, course changes, campaign launches, assessment submissions). Note: there is currently no API/UI to edit or delete an individual user after creation.
 - **NextAuth JWT sessions** — 8h, signed with `NEXTAUTH_SECRET`.
 - **Multi-tenant isolation** — every admin/manager query is scoped by the caller's `tenantId`; single-tenant (unscoped) installs are unaffected.
 - **Login rate limiting** — 5 failed attempts per email per 15 minutes (Redis-backed; fails open if Redis is unreachable).
@@ -130,6 +129,7 @@ cybershield/
 - **Security headers** — CSP, HSTS, X-Frame-Options, etc. set in `next.config.js`.
 - **Structured JSON logging** (`src/lib/logger.ts`) for unhandled API errors and audit-log write failures — pipe stdout to your log aggregator (Datadog, CloudWatch, etc.) in production. No external error-tracking SDK (e.g. Sentry) is wired in; add one if you need alerting.
 - For production: set strong `DB_PASSWORD` and `NEXTAUTH_SECRET`, enable TLS in `docker/nginx.conf`, set up regular `postgres` backups of the `cs_postgres_data` volume.
+- See [`SECURITY.md`](./SECURITY.md) for a full OWASP Top 10 mapping with file-level evidence, including the known accepted risk around the pinned Next.js 14.x line's CVEs (full remediation requires a major-version migration, tracked separately).
 
 ---
 
