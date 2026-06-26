@@ -61,6 +61,34 @@ the now-running login page — a screen reader landing on either input
 would not announce its label (WCAG 1.3.1, 4.1.2). Added matching
 `id`/`htmlFor` pairs (`login-email`, `login-password`).
 
+## Phishing campaigns never delivered simulated emails — Fixed (Critical, core feature non-functional)
+Audited the campaign-management workflow (the #1 responsibility in this
+review's benchmark role: "security awareness and phishing campaign
+management") and found `workers/simulation.worker.ts`'s `launch` handler
+only flipped `Campaign.status` to `RUNNING` — it never resolved
+`CampaignTarget` rows (department/role/all-users) to actual users, and
+never created a single `SimulatedInboxItem`. Confirmed via grep that no
+code path anywhere in `src/` or `workers/` ever called
+`simulatedInboxItem.create`/`createMany`. This meant **the entire
+phishing-simulation product feature was non-functional**: an admin could
+create and "launch" a campaign, but no employee would ever receive a
+simulated phishing email, so nothing could be clicked, reported, scored,
+or fed into risk-score/behavioral-metrics — the application's core
+value proposition. Fixed by having the worker resolve each campaign's
+targets into the matching tenant-scoped user set and bulk-create
+`SimulatedInboxItem` rows from the campaign's `SimulationTemplate`
+payload (subject/sender/body). Also closed a related gap in
+`POST /api/admin/campaigns`: `templateId` was never checked against the
+admin's own tenant, allowing a campaign to be built from another
+tenant's simulation template. Verified live end-to-end against the local
+database: created a real campaign with an `allUsers` target, ran the
+worker's resolution logic, confirmed 10 employees received a correctly-
+populated inbox item matching the template content, then cleaned up the
+test data. `department`/`role`-scoped targeting is inherently tenant-safe
+even without an explicit check, since the worker's query ANDs
+`tenantId` with the target filter — a cross-tenant `departmentId` simply
+matches zero users rather than leaking data.
+
 ## Assessment endpoints missing enrollment check — Fixed (High, cross-tenant)
 Audited the core training-completion workflow (assessment fetch/submit)
 live, since auth/RBAC had been verified but the actual training product

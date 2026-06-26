@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, requireRole, handleZodError, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit } from "@/lib/api";
 import { db } from "@/lib/db";
 import { createCampaignSchema } from "@/lib/validations";
 import { simulationQueue } from "@/lib/queues";
@@ -22,6 +22,12 @@ export async function POST(req: NextRequest) {
   const tenantId = (ctx.user as any).tenantId ?? null;
   try {
     const body = createCampaignSchema.parse(await req.json());
+
+    const template = await db.simulationTemplate.findUnique({ where: { id: body.templateId } });
+    if (!template || (tenantId && template.tenantId && template.tenantId !== tenantId)) {
+      return bad("Invalid template", 400);
+    }
+
     const campaign = await db.campaign.create({
       data: {
         name: body.name,
