@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "./auth";
 import { db } from "./db";
 import { ZodError } from "zod";
+import { logger } from "./logger";
 
 export function ok(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
@@ -29,7 +30,7 @@ export function handleZodError(e: unknown) {
   if (e instanceof ZodError) {
     return bad(e.errors.map((x) => x.message).join(", "));
   }
-  console.error(e);
+  logger.error("Unhandled API error", e);
   return bad("Internal server error", 500);
 }
 
@@ -44,7 +45,7 @@ export async function audit(
     await db.auditLog.create({
       data: { userId, action, entity, entityId, metadata: metadata as any },
     });
-  } catch {
-    // non-fatal
+  } catch (e) {
+    logger.error("Failed to write audit log entry", e, { userId, action, entity, entityId });
   }
 }

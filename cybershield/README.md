@@ -124,6 +124,11 @@ cybershield/
 - **Audit log on every privileged mutation** (user create/update/delete, course changes, campaign launches, assessment submissions).
 - **Last-admin protection** prevents you from deleting your only admin account.
 - **NextAuth JWT sessions** — 8h, signed with `NEXTAUTH_SECRET`.
+- **Multi-tenant isolation** — every admin/manager query is scoped by the caller's `tenantId`; single-tenant (unscoped) installs are unaffected.
+- **Login rate limiting** — 5 failed attempts per email per 15 minutes (Redis-backed; fails open if Redis is unreachable).
+- **CSRF defense-in-depth** — state-changing API requests are rejected if their `Origin` header doesn't match the request host, on top of NextAuth's `SameSite=Lax` session cookie.
+- **Security headers** — CSP, HSTS, X-Frame-Options, etc. set in `next.config.js`.
+- **Structured JSON logging** (`src/lib/logger.ts`) for unhandled API errors and audit-log write failures — pipe stdout to your log aggregator (Datadog, CloudWatch, etc.) in production. No external error-tracking SDK (e.g. Sentry) is wired in; add one if you need alerting.
 - For production: set strong `DB_PASSWORD` and `NEXTAUTH_SECRET`, enable TLS in `docker/nginx.conf`, set up regular `postgres` backups of the `cs_postgres_data` volume.
 
 ---
@@ -134,6 +139,7 @@ cybershield/
 npm run dev              # next dev (port 3000)
 npm run build            # next build (standalone output)
 npm run start            # next start
+npm test                 # vitest run (validation schemas, CSRF check, logger)
 npm run workers:dev      # tsx workers/index.ts (with watch)
 npm run workers:start    # node-runner workers (prod)
 npx prisma studio        # browse the DB in a UI
