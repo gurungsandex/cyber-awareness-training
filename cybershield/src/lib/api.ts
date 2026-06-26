@@ -34,6 +34,22 @@ export function handleZodError(e: unknown) {
   return bad("Internal server error", 500);
 }
 
+// Ensures every route handler returns the app's standard `{ error }` JSON
+// shape on failure instead of Next.js's default error page — route handlers
+// that throw (e.g. an unexpected Prisma error) would otherwise produce an
+// inconsistent, framework-shaped response instead of our API's contract.
+export function withApiErrorHandling<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<Response>
+): (...args: Args) => Promise<Response> {
+  return async (...args: Args) => {
+    try {
+      return await handler(...args);
+    } catch (e) {
+      return handleZodError(e);
+    }
+  };
+}
+
 export async function audit(
   userId: string,
   action: string,

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, audit, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ const updateSchema = z.object({
   description: z.string().max(300).optional(),
 });
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export const PATCH = withApiErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const tenantId = (ctx.user as any).tenantId ?? null;
@@ -21,9 +21,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   await audit(ctx.user.id, "GROUP_UPDATE", "Department", params.id, body);
   return ok({ department: updated });
-}
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export const DELETE = withApiErrorHandling(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const tenantId = (ctx.user as any).tenantId ?? null;
@@ -38,4 +38,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   await db.department.delete({ where: { id: params.id } });
   await audit(ctx.user.id, "GROUP_DELETE", "Department", params.id, { name: dept.name });
   return ok({ deleted: true });
-}
+});

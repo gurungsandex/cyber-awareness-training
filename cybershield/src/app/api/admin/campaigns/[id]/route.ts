@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { withApiErrorHandling } from "@/lib/api";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export const PATCH = withApiErrorHandling(async (req: Request, { params }: { params: { id: string } }) => {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -26,4 +27,4 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     select: { id: true, visibleToManagers: true, status: true },
   });
   return NextResponse.json(updated);
-}
+});

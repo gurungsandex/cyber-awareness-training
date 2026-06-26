@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, audit, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ const createSchema = z.object({
   description: z.string().max(300).optional(),
 });
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const tenantId = (ctx.user as any).tenantId ?? null;
@@ -20,9 +20,9 @@ export async function GET() {
   });
 
   return ok({ departments });
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withApiErrorHandling(async (req: NextRequest) => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const tenantId = (ctx.user as any).tenantId ?? null;
@@ -38,4 +38,4 @@ export async function POST(req: NextRequest) {
 
   await audit(ctx.user.id, "GROUP_CREATE", "Department", dept.id, { name: body.name });
   return ok({ department: dept });
-}
+});

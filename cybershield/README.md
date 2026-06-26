@@ -130,6 +130,7 @@ cybershield/
 - **Structured JSON logging** (`src/lib/logger.ts`) for unhandled API errors and audit-log write failures — pipe stdout to your log aggregator (Datadog, CloudWatch, etc.) in production. No external error-tracking SDK (e.g. Sentry) is wired in; add one if you need alerting.
 - For production: set strong `DB_PASSWORD` and `NEXTAUTH_SECRET`, enable TLS in `docker/nginx.conf`, set up regular `postgres` backups of the `cs_postgres_data` volume.
 - See [`SECURITY.md`](./SECURITY.md) for a full OWASP Top 10 mapping with file-level evidence, including the known accepted risk around the pinned Next.js 14.x line's CVEs (full remediation requires a major-version migration, tracked separately).
+- See [`PRODUCTION_READINESS.md`](./PRODUCTION_READINESS.md) for the itemized pre-launch audit status — what's fixed, what's a deliberate accepted risk, and what requires a decision from the project owner or legal team before launch.
 
 ---
 

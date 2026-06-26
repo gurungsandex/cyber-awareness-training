@@ -1,7 +1,7 @@
-import { ok, requireRole } from "@/lib/api";
+import { ok, requireRole, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   const ctx = await requireRole("MANAGER");
   if ("status" in ctx) return ctx;
   const role = (ctx.user as any).role;
@@ -28,4 +28,4 @@ export async function GET() {
   const completionRate = allEnrollments.length > 0 ? Math.round((completed / allEnrollments.length) * 100) : 0;
 
   return ok({ totalUsers, atRisk, completionRate, users });
-}
+});

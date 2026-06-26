@@ -1,7 +1,7 @@
-import { ok, bad, requireAuth } from "@/lib/api";
+import { ok, bad, requireAuth, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   const ctx = await requireAuth();
   if ("status" in ctx) return ctx;
   const userId = ctx.user.id;
@@ -23,4 +23,4 @@ export async function GET() {
   const user = await db.user.findUnique({ where: { id: userId }, select: { riskScore: true, name: true } });
 
   return ok({ enrollments, notifications, tip, riskScore: user?.riskScore ?? 0 });
-}
+});

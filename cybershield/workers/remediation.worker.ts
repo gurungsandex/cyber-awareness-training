@@ -6,10 +6,11 @@ export const remediationWorker = new Worker(
   "remediation",
   async (job) => {
     const { userId, trigger } = job.data as { userId: string; trigger: string };
+    const user = await db.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
 
     // Find mandatory remediation courses (using isMandatory + the seeded phishing course as fallback)
     const remediationCourse = await db.course.findFirst({
-      where: { isMandatory: true, status: "PUBLISHED" },
+      where: { isMandatory: true, status: "PUBLISHED", ...(user?.tenantId ? { tenantId: user.tenantId } : {}) },
       orderBy: { createdAt: "asc" },
     });
     if (!remediationCourse) return { skipped: "no_course" };

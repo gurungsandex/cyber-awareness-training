@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { randomBytes } from "crypto";
+import { withApiErrorHandling } from "@/lib/api";
 
-export async function POST(req: Request) {
+export const POST = withApiErrorHandling(async (req: Request) => {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -24,4 +25,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ token: tenant.registrationToken });
-}
+});

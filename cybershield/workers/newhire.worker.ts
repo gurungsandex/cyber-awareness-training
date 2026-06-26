@@ -6,7 +6,10 @@ export const newHireWorker = new Worker(
   "newhire",
   async (job) => {
     const { userId } = job.data as { userId: string };
-    const mandatory = await db.course.findMany({ where: { isMandatory: true, status: "PUBLISHED" } });
+    const user = await db.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
+    const mandatory = await db.course.findMany({
+      where: { isMandatory: true, status: "PUBLISHED", ...(user?.tenantId ? { tenantId: user.tenantId } : {}) },
+    });
     const due = new Date(); due.setDate(due.getDate() + 14);
 
     for (const c of mandatory) {

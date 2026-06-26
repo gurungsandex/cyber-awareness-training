@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { withApiErrorHandling } from "@/lib/api";
 
 const schema = z.object({
   name:        z.string().min(2).max(100),
@@ -12,7 +13,7 @@ const schema = z.object({
 });
 
 // GET: return tenant name + department list for the registration form
-export async function GET(_req: Request, { params }: { params: { token: string } }) {
+export const GET = withApiErrorHandling(async (_req: Request, { params }: { params: { token: string } }) => {
   const tenant = await db.tenant.findUnique({
     where: { registrationToken: params.token },
     select: {
@@ -22,10 +23,10 @@ export async function GET(_req: Request, { params }: { params: { token: string }
   });
   if (!tenant) return NextResponse.json({ error: "Invalid or expired registration link." }, { status: 404 });
   return NextResponse.json({ tenantId: tenant.id, tenantName: tenant.name, departments: tenant.departments });
-}
+});
 
 // POST: create the employee account
-export async function POST(req: Request, { params }: { params: { token: string } }) {
+export const POST = withApiErrorHandling(async (req: Request, { params }: { params: { token: string } }) => {
   const tenant = await db.tenant.findUnique({
     where: { registrationToken: params.token },
     select: { id: true },
@@ -75,4 +76,4 @@ export async function POST(req: Request, { params }: { params: { token: string }
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });
-}
+});

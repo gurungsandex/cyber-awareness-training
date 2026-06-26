@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, audit, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -11,7 +11,7 @@ const updateSchema = z.object({
   deadlineEnforcement: z.enum(["SOFT", "HARD", "ESCALATE"]).optional(),
 });
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export const PATCH = withApiErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const tenantId = (ctx.user as any).tenantId ?? null;
@@ -24,4 +24,4 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   await audit(ctx.user.id, "COURSE_UPDATE", "Course", params.id, body);
   return ok({ course: { id: updated.id, retentionCheckEnabled: updated.retentionCheckEnabled, isMandatory: updated.isMandatory } });
-}
+});
