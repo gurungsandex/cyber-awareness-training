@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { ok, bad, requireAuth, handleZodError, audit } from "@/lib/api";
 import { submitAssessmentSchema } from "@/lib/validations";
 import { certificateQueue, remediationQueue } from "@/lib/queues";
+import { scoreAssessment } from "@/lib/scoring";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await requireAuth();
@@ -15,16 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!assessment) return bad("Assessment not found", 404);
 
     // Score server-side
-    let correctCount = 0;
-    const detailed = body.answers.map(a => {
-      const q = assessment.questions.find(qq => qq.id === a.questionId);
-      const correct = !!q && q.correctOptionId === a.selectedOptionId;
-      if (correct) correctCount++;
-      return { questionId: a.questionId, selectedOptionId: a.selectedOptionId, correct, correctOptionId: q?.correctOptionId, explanation: q?.explanation };
-    });
-
-    const scorePct = Math.round((correctCount / Math.max(1, assessment.questions.length)) * 100);
-    const passed = scorePct >= assessment.passMark;
+    const { scorePct, passed, detailed } = scoreAssessment(assessment.questions, body.answers, assessment.passMark);
 
     const attempt = await db.assessmentAttempt.create({
       data: {
