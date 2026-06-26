@@ -1,5 +1,4 @@
-import type { NextConfig } from "next";
-
+/** @type {import('next').NextConfig} */
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -23,7 +22,7 @@ const securityHeaders = [
   },
 ];
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
   experimental: { serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"] },
@@ -31,4 +30,5 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
 };
-export default nextConfig;
+
+module.exports = nextConfig;
