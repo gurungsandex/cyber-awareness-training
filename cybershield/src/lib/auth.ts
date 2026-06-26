@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { db } from "./db";
 import bcrypt from "bcryptjs";
 import { redis } from "./redis";
+import { authConfig } from "./auth.config";
 
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_SECONDS = 15 * 60;
@@ -28,7 +29,7 @@ async function clearLoginAttempts(email: string) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -61,24 +62,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.tenantId = (user as any).tenantId ?? null;
-      }
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        (session.user as any).role = token.role;
-        (session.user as any).tenantId = token.tenantId ?? null;
-      }
-      return session;
-    },
-  },
-  pages: { signIn: "/login" },
-  trustHost: true,
 });
