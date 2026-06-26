@@ -78,6 +78,19 @@ session-lifetime fix from a prior review pass) rather than being revoked
 instantly — acceptable given the short session lifetime and out of scope
 for "do not introduce unnecessary features."
 
+## Registration, login, and RBAC redirect flows — Verified live, no issues found
+Exercised the full self-registration → login → role-based-redirect flow
+end-to-end against the live local database (not just code review):
+`GET /api/register/[token]` returns tenant/department data, `POST` creates
+the account, a second `POST` with the same email correctly returns 409,
+`POST /api/auth/callback/credentials` with the new account's password
+returns a valid session cookie, and with that session: `/employee` → 200,
+`/admin` → 307 (role-denied redirect), `/login` → 307 (already-authed
+redirect away). Security headers (CSP, HSTS, X-Frame-Options, etc. from
+`next.config.js`) confirmed present on the auth callback response itself,
+not just page loads. No defects found in this flow. Test account cleaned
+up afterward.
+
 ## Access control / multi-tenancy — Fixed
 Every Prisma query site under `src/` (44 files) was enumerated and
 individually verified. Eight Critical cross-tenant/cross-manager leaks
