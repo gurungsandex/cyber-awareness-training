@@ -14,9 +14,10 @@ const updateSchema = z.object({
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const course = await db.course.findUnique({ where: { id: params.id } });
-  if (!course) return bad("Course not found", 404);
+  if (!course || (tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
 
   const body = updateSchema.parse(await req.json());
   const updated = await db.course.update({ where: { id: params.id }, data: body });

@@ -13,16 +13,17 @@ const assignSchema = z.object({
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const course = await db.course.findUnique({ where: { id: params.id } });
-  if (!course) return bad("Course not found", 404);
+  if (!course || (tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
 
   const body = assignSchema.parse(await req.json());
   const dueAt = new Date();
   dueAt.setDate(dueAt.getDate() + body.dueInDays);
 
   // Build user filter
-  const userWhere: any = { deletedAt: null };
+  const userWhere: any = { deletedAt: null, ...(tenantId ? { tenantId } : {}) };
   if (body.target === "DEPARTMENT" && body.departmentId) {
     userWhere.departmentId = body.departmentId;
   } else if (body.target === "ROLE" && body.role) {
