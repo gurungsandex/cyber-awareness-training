@@ -120,7 +120,7 @@ export function InboxClient({ items: initialItems }: Props) {
                     <span className="text-text-muted">&lt;{selected.senderEmail}&gt;</span>
                   </p>
                 </div>
-                <button onClick={() => setSelected(null)} className="rounded-lg p-1 hover:bg-elevated text-text-muted">
+                <button onClick={() => setSelected(null)} className="rounded-lg p-1 hover:bg-elevated text-text-muted" aria-label="Close">
                   <X className="h-4 w-4" />
                 </button>
               </div>

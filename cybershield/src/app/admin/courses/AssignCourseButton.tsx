@@ -69,7 +69,7 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                 <h3 className="font-heading font-semibold text-text-primary">Assign Course</h3>
                 <p className="text-xs text-text-muted mt-0.5 truncate max-w-64">{courseTitle}</p>
               </div>
-              <button onClick={close} className="rounded-lg p-1.5 hover:bg-elevated text-text-muted">
+              <button onClick={close} className="rounded-lg p-1.5 hover:bg-elevated text-text-muted" aria-label="Close">
                 <X className="h-4 w-4" />
               </button>
             </div>

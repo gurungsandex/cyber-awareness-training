@@ -203,6 +203,7 @@ export function GroupsClient({ initialDepartments }: Props) {
                     onClick={() => startEdit(dept)}
                     className="p-1.5 rounded-lg hover:bg-elevated text-text-muted hover:text-text-primary transition-colors"
                     title="Edit group"
+                    aria-label="Edit group"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -215,6 +216,7 @@ export function GroupsClient({ initialDepartments }: Props) {
                         : "hover:bg-danger/10 text-text-muted hover:text-danger"
                     )}
                     title={dept._count.users > 0 ? "Reassign members before deleting" : "Delete group"}
+                    aria-label={dept._count.users > 0 ? "Reassign members before deleting" : "Delete group"}
                     disabled={dept._count.users > 0}
                   >
                     <Trash2 className="h-3.5 w-3.5" />

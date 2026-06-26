@@ -83,7 +83,7 @@ export function CreateCampaignButton({ templates }: Props) {
           <div className="w-full max-w-lg rounded-modal bg-surface border border-border shadow-modal">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h3 className="font-heading font-semibold text-text-primary">Create Phishing Campaign</h3>
-              <button onClick={close} className="rounded-lg p-1.5 hover:bg-elevated text-text-muted">
+              <button onClick={close} className="rounded-lg p-1.5 hover:bg-elevated text-text-muted" aria-label="Close">
                 <X className="h-4 w-4" />
               </button>
             </div>

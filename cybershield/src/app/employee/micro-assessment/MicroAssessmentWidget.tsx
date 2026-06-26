@@ -54,7 +54,7 @@ export function MicroAssessmentWidget({ courseTitle, enrollmentId, questions, on
             <Brain className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium text-text-primary">Knowledge Check Complete</span>
           </div>
-          <button onClick={onDismiss} className="p-1 rounded hover:bg-elevated text-text-muted">
+          <button onClick={onDismiss} className="p-1 rounded hover:bg-elevated text-text-muted" aria-label="Dismiss">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
