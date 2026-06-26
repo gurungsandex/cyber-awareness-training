@@ -61,6 +61,23 @@ the now-running login page — a screen reader landing on either input
 would not announce its label (WCAG 1.3.1, 4.1.2). Added matching
 `id`/`htmlFor` pairs (`login-email`, `login-password`).
 
+## Account deactivation — Fixed (missing integration)
+The `User.deletedAt` field was read and filtered on by every single user
+query across the app (18 query sites grepped) — implying soft-delete was
+designed in — but no route anywhere ever wrote to it. There was no way
+for an admin to offboard a departing employee or revoke a compromised
+account; the only lifecycle operation available was creation. Added
+`DELETE /api/admin/users/[id]` (sets `deletedAt`, blocks self-deactivation,
+audit-logged as `USER_DEACTIVATE`) and a "Deactivate" action in
+`admin/users/page.tsx`. Verified the write path against the live local
+database (soft-delete then revert) and via `tsc`/`lint`/`npm test`/
+`npm run build`. Known bounded limitation, not fixed further since it
+would require new infrastructure: a deactivated user's *existing* JWT
+session remains valid until it expires naturally (max 8h, per the
+session-lifetime fix from a prior review pass) rather than being revoked
+instantly — acceptable given the short session lifetime and out of scope
+for "do not introduce unnecessary features."
+
 ## Access control / multi-tenancy — Fixed
 Every Prisma query site under `src/` (44 files) was enumerated and
 individually verified. Eight Critical cross-tenant/cross-manager leaks
