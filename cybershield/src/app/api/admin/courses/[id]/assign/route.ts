@@ -11,12 +11,19 @@ const assignSchema = z.object({
 });
 
 export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const ctx = await requireRole("ADMIN");
+  const ctx = await requireRole("MANAGER");
   if ("status" in ctx) return ctx;
   const tenantId = (ctx.user as any).tenantId ?? null;
 
   const course = await db.course.findUnique({ where: { id: params.id } });
-  if (!course || (tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
+  if (!course || (tenantId && course.tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
+
+  if ((ctx.user as any).role === "MANAGER") {
+    const grant = await db.managerGrant.findUnique({
+      where: { managerId_courseId: { managerId: ctx.user.id, courseId: params.id } },
+    });
+    if (!grant) return bad("Forbidden", 403);
+  }
 
   const body = assignSchema.parse(await req.json());
   const dueAt = new Date();

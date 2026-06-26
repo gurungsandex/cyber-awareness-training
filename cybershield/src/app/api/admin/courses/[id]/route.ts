@@ -17,7 +17,7 @@ export const PATCH = withApiErrorHandling(async (req: NextRequest, { params }: {
   const tenantId = (ctx.user as any).tenantId ?? null;
 
   const course = await db.course.findUnique({ where: { id: params.id } });
-  if (!course || (tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
+  if (!course || (tenantId && course.tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
 
   const body = updateSchema.parse(await req.json());
   const updated = await db.course.update({ where: { id: params.id }, data: body });
