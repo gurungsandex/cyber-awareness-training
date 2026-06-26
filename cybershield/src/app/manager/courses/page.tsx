@@ -28,7 +28,7 @@ export default async function ManagerCoursesPage() {
   const courses = await db.course.findMany({
     where: {
       status: "PUBLISHED",
-      ...tenantFilter,
+      ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}),
       ...(grantedCourseIds !== null && { id: { in: grantedCourseIds } }),
     },
     include: {

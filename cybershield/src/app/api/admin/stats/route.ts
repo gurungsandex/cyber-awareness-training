@@ -9,7 +9,7 @@ export async function GET() {
 
   const [totalUsers, totalCourses, campaigns, enrollments] = await Promise.all([
     db.user.count({ where: { deletedAt: null, ...tenantFilter } }),
-    db.course.count({ where: { status: "PUBLISHED", ...tenantFilter } }),
+    db.course.count({ where: { status: "PUBLISHED", ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) } }),
     db.campaign.findMany({
       where: tenantFilter,
       orderBy: { createdAt: "desc" },

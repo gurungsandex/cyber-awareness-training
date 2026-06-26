@@ -63,7 +63,7 @@ export default async function ReportsPage() {
       },
     }),
     db.course.findMany({
-      where: { status: "PUBLISHED", ...tenantFilter },
+      where: { status: "PUBLISHED", ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) },
       select: {
         id: true, title: true, isMandatory: true, complianceFrameworks: true,
         _count: { select: { enrollments: true } },

@@ -20,7 +20,7 @@ export default async function ManagerGrantsPage() {
       orderBy: { name: "asc" },
     }),
     db.course.findMany({
-      where: { status: "PUBLISHED", ...tenantFilter },
+      where: { status: "PUBLISHED", ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) },
       orderBy: [{ isMandatory: "desc" }, { title: "asc" }],
       select: { id: true, title: true, isMandatory: true },
     }),

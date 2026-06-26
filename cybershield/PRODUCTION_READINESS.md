@@ -240,6 +240,52 @@ this. Recorded here as a required step before launch that must be
 performed by the deploying organization's legal team, not by this
 review.
 
+## Six admin/manager pages showed zero courses for every tenant — Fixed (Critical, core feature non-functional)
+The `Course` model has a nullable `tenantId` column used to represent
+global/library courses (every seeded course has `tenantId: null`,
+intended to be visible to all tenants). Several query sites applied a
+tenant guard of the form `where: { ...tenantFilter }` (i.e.
+`tenantId ? { tenantId } : {}`), which is an **exact-match** filter —
+Prisma's `tenantId: <value>` does not match rows where the column is
+`null`. The result: every tenant-scoped admin or manager query against
+`Course` silently returned zero rows, even though 10 published courses
+exist. This is the same defect class previously fixed in the
+`assign`/`PATCH` course routes (see above), but recurring at six
+additional call sites that were not part of that original fix:
+
+- `src/app/api/admin/stats/route.ts` — `totalCourses` stat always 0.
+  Live-confirmed via `curl /api/admin/stats`: `{"totalCourses":0,...}`
+  before the fix, `{"totalCourses":10,...}` after.
+- `src/app/admin/page.tsx` — "Active Courses" stat card on the admin
+  dashboard always showed 0. Live-confirmed after fix: card renders `10`.
+- `src/app/admin/courses/page.tsx` — the full Course Management page
+  showed "No courses yet" for every tenant. Live-confirmed after fix:
+  renders the seeded courses (e.g. "Phishing 101: Spot the Bait").
+- `src/app/admin/manager-grants/page.tsx` — the manager-course-access
+  grant matrix had zero courses to grant to any manager. Live-confirmed
+  after fix: courses appear in the grant matrix.
+- `src/app/admin/reports/page.tsx` — the course-completion-by-course
+  section of the analytics/reports page had zero courses to report on.
+  Live-confirmed after fix: courses appear in the completion breakdown.
+- `src/app/manager/courses/page.tsx` — the manager's course-assignment
+  picker, combined with the existing `ManagerGrant` filter for
+  non-admin managers. Live-confirmed end-to-end: granted a course to a
+  test manager via `ManagerGrant`, logged in as that manager, and
+  confirmed the course now renders on `/manager/courses` (previously it
+  would never have appeared, since the tenant filter excluded it before
+  the grant filter was even applied).
+
+Fix applied uniformly at each site, matching the pattern already used
+correctly elsewhere in the codebase (`api/admin/campaigns/route.ts` for
+the analogous `SimulationTemplate` model):
+```ts
+...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {})
+```
+This treats a `tenantId: null` course as globally visible to every
+tenant, rather than as belonging to no one. Verified with
+`npx tsc --noEmit`, `npm run lint`, `npm test` (33/33 passing), and
+`npm run build`, all clean.
+
 ## Cross-browser / responsive UI testing, E2E tests — Infeasible in this sandbox
 This sandbox has no real browser matrix and Playwright cannot reach this
 app's running dev server in a way that exercises realistic user flows

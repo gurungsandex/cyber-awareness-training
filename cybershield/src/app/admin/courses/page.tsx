@@ -35,7 +35,7 @@ export default async function AdminCoursesPage() {
 
   const [courses, departments] = await Promise.all([
     db.course.findMany({
-      where: tenantFilter,
+      where: tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {},
       orderBy: [{ isMandatory: "desc" }, { title: "asc" }],
       include: {
         _count: { select: { enrollments: true } },

@@ -23,7 +23,7 @@ export default async function AdminDashboard() {
 
   const [totalUsers, totalCourses, enrollments, campaigns, recentAudit, riskScores, overdue] = await Promise.all([
     db.user.count({ where: { deletedAt: null, ...tenantFilter } }),
-    db.course.count({ where: { status: "PUBLISHED", ...tenantFilter } }),
+    db.course.count({ where: { status: "PUBLISHED", ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) } }),
     db.enrollment.findMany({ where: { user: tenantFilter }, select: { status: true } }),
     db.campaign.findMany({
       where: tenantFilter,
