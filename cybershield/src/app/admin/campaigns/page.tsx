@@ -9,9 +9,12 @@ import { CampaignsTable } from "./CampaignsTable";
 export default async function CampaignsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   const [campaigns, templates] = await Promise.all([
     db.campaign.findMany({
+      where: tenantFilter,
       include: {
         template: true,
         _count: { select: { interactions: true, targets: true } },
@@ -19,6 +22,7 @@ export default async function CampaignsPage() {
       orderBy: { createdAt: "desc" },
     }),
     db.simulationTemplate.findMany({
+      where: tenantFilter,
       orderBy: [{ type: "asc" }, { name: "asc" }],
       select: { id: true, name: true, type: true, difficulty: true, attackTactic: true },
     }),

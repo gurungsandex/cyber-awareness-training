@@ -18,27 +18,31 @@ function campaignStatusVariant(s: string): any {
 export default async function AdminDashboard() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/login");
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   const [totalUsers, totalCourses, enrollments, campaigns, recentAudit, riskScores, overdue] = await Promise.all([
-    db.user.count({ where: { deletedAt: null } }),
-    db.course.count({ where: { status: "PUBLISHED" } }),
-    db.enrollment.findMany({ select: { status: true } }),
+    db.user.count({ where: { deletedAt: null, ...tenantFilter } }),
+    db.course.count({ where: { status: "PUBLISHED", ...tenantFilter } }),
+    db.enrollment.findMany({ where: { user: tenantFilter }, select: { status: true } }),
     db.campaign.findMany({
+      where: tenantFilter,
       orderBy: { createdAt: "desc" },
       take: 6,
       include: { template: true, _count: { select: { interactions: true } } },
     }),
     db.auditLog.findMany({
+      where: tenantFilter,
       orderBy: { createdAt: "desc" },
       take: 6,
       include: { user: { select: { name: true } } },
     }),
     db.user.findMany({
-      where: { deletedAt: null, role: "EMPLOYEE" },
+      where: { deletedAt: null, role: "EMPLOYEE", ...tenantFilter },
       select: { riskScore: true },
     }),
     db.enrollment.count({
-      where: { dueAt: { lt: new Date() }, status: { notIn: ["COMPLETED"] } },
+      where: { dueAt: { lt: new Date() }, status: { notIn: ["COMPLETED"] }, user: tenantFilter },
     }),
   ]);
 
