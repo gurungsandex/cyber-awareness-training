@@ -11,14 +11,18 @@ export default async function ManagerReportsPage() {
   const tenantId = (session.user as any).tenantId ?? null;
   const managerId = session.user.id!;
 
+  const manager = role === "MANAGER" ? await db.user.findUnique({ where: { id: managerId }, select: { departmentId: true } }) : null;
+
   const departments = await db.department.findMany({
-    where: tenantId ? { tenantId } : {},
+    where: {
+      ...(tenantId ? { tenantId } : {}),
+      ...(role === "MANAGER" ? { id: manager?.departmentId ?? "__none__" } : {}),
+    },
     include: {
       users: {
         where: {
           role: "EMPLOYEE",
           deletedAt: null,
-          ...(role === "MANAGER" ? { managerId } : {}),
         },
         select: {
           riskScore: true,

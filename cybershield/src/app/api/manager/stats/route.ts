@@ -7,14 +7,20 @@ export const GET = withApiErrorHandling(async () => {
   const role = (ctx.user as any).role;
   const tenantId = (ctx.user as any).tenantId ?? null;
 
+  const manager = role === "MANAGER" ? await db.user.findUnique({ where: { id: ctx.user.id }, select: { departmentId: true } }) : null;
+
   const users = await db.user.findMany({
     where: {
       deletedAt: null,
       role: "EMPLOYEE",
       ...(tenantId ? { tenantId } : {}),
-      ...(role === "MANAGER" ? { managerId: ctx.user.id } : {}),
+      ...(role === "MANAGER" ? { departmentId: manager?.departmentId ?? "__none__" } : {}),
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      riskScore: true,
       department: true,
       enrollments: { select: { status: true } },
     },

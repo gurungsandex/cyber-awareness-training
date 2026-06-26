@@ -17,11 +17,14 @@ export const POST = withApiErrorHandling(async (req: NextRequest) => {
 
   const target = await db.user.findFirst({
     where: { id: targetUserId, deletedAt: null, ...(tenantId ? { tenantId } : {}) },
-    select: { id: true, managerId: true },
+    select: { id: true, departmentId: true },
   });
   if (!target) return NextResponse.json({ error: "Target user not found" }, { status: 404 });
-  if (role === "MANAGER" && target.managerId !== senderId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (role === "MANAGER") {
+    const manager = await db.user.findUnique({ where: { id: senderId }, select: { departmentId: true } });
+    if (!manager?.departmentId || target.departmentId !== manager.departmentId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   await db.$transaction([
