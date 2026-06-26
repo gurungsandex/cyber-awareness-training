@@ -13,6 +13,15 @@ export async function POST(req: NextRequest) {
 
   const senderId = session.user.id!;
 
+  const target = await db.user.findFirst({
+    where: { id: targetUserId, deletedAt: null },
+    select: { id: true, managerId: true },
+  });
+  if (!target) return NextResponse.json({ error: "Target user not found" }, { status: 404 });
+  if (role === "MANAGER" && target.managerId !== senderId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await db.$transaction([
     db.nudgeLog.create({
       data: { senderId, targetUserId, enrollmentId, nudgeType, message },

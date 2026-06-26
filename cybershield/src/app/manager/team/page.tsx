@@ -10,9 +10,14 @@ export default async function TeamPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const senderId = session.user.id!;
+  const role = (session.user as any).role as string;
 
   const users = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
+    where: {
+      deletedAt: null,
+      role: "EMPLOYEE",
+      ...(role === "MANAGER" ? { managerId: senderId } : {}),
+    },
     include: {
       department: true,
       enrollments: {

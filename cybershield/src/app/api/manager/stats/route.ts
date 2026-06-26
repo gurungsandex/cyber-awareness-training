@@ -4,9 +4,14 @@ import { db } from "@/lib/db";
 export async function GET() {
   const ctx = await requireRole("MANAGER");
   if ("status" in ctx) return ctx;
+  const role = (ctx.user as any).role;
 
   const users = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
+    where: {
+      deletedAt: null,
+      role: "EMPLOYEE",
+      ...(role === "MANAGER" ? { managerId: ctx.user.id } : {}),
+    },
     include: {
       department: true,
       enrollments: { select: { status: true } },
