@@ -11,9 +11,10 @@ const updateSchema = z.object({
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const dept = await db.department.findUnique({ where: { id: params.id } });
-  if (!dept) return bad("Group not found", 404);
+  if (!dept || (tenantId && dept.tenantId !== tenantId)) return bad("Group not found", 404);
 
   const body = updateSchema.parse(await req.json());
   const updated = await db.department.update({ where: { id: params.id }, data: body });
@@ -25,12 +26,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const dept = await db.department.findUnique({
     where: { id: params.id },
     include: { _count: { select: { users: true } } },
   });
-  if (!dept) return bad("Group not found", 404);
+  if (!dept || (tenantId && dept.tenantId !== tenantId)) return bad("Group not found", 404);
   if (dept._count.users > 0) return bad("Cannot delete a group that has members. Reassign users first.");
 
   await db.department.delete({ where: { id: params.id } });

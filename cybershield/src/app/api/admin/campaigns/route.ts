@@ -7,7 +7,9 @@ import { simulationQueue } from "@/lib/queues";
 export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
   const campaigns = await db.campaign.findMany({
+    where: tenantId ? { tenantId } : {},
     include: { template: true, _count: { select: { interactions: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -17,6 +19,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
   try {
     const body = createCampaignSchema.parse(await req.json());
     const campaign = await db.campaign.create({
@@ -24,6 +27,7 @@ export async function POST(req: NextRequest) {
         name: body.name,
         templateId: body.templateId,
         scheduledAt: new Date(body.scheduledAt),
+        tenantId,
         targets: { create: body.targets },
       },
     });

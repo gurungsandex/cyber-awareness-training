@@ -10,7 +10,9 @@ export async function GET() {
   if (!session?.user || (session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const tenantId = (session.user as any).tenantId ?? null;
   const departments = await db.department.findMany({
+    where: tenantId ? { tenantId } : {},
     orderBy: { name: "asc" },
     include: { _count: { select: { users: true } } },
   });

@@ -11,8 +11,10 @@ const createSchema = z.object({
 export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const departments = await db.department.findMany({
+    where: tenantId ? { tenantId } : {},
     include: { _count: { select: { users: true } } },
     orderBy: { name: "asc" },
   });
@@ -23,14 +25,15 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const body = createSchema.parse(await req.json());
 
-  const existing = await db.department.findFirst({ where: { name: body.name, tenantId: null } });
+  const existing = await db.department.findFirst({ where: { name: body.name, tenantId } });
   if (existing) return bad("A group with this name already exists.");
 
   const dept = await db.department.create({
-    data: { name: body.name, description: body.description },
+    data: { name: body.name, description: body.description, tenantId },
   });
 
   await audit(ctx.user.id, "GROUP_CREATE", "Department", dept.id, { name: body.name });

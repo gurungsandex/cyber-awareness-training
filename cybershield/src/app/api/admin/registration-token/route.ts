@@ -8,10 +8,14 @@ export async function POST(req: Request) {
   if (!session?.user || (session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { tenantId } = await req.json();
+  const adminTenantId = (session.user as any).tenantId ?? null;
+  const body = await req.json().catch(() => ({}));
+  const tenantId = adminTenantId ?? body.tenantId;
   if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 });
+  if (adminTenantId && body.tenantId && body.tenantId !== adminTenantId)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const token = randomBytes(24).toString("hex");
+  const token = randomBytes(32).toString("hex");
 
   const tenant = await db.tenant.update({
     where: { id: tenantId },
