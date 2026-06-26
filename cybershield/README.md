@@ -11,7 +11,7 @@ CyberShield is a self-hosted training platform that lets security teams run real
 | Phase | Capability |
 |-------|------------|
 | **1. Foundation** | Next.js 14 App Router, NextAuth credentials, role-based access (Admin / Manager / Employee), Prisma + PostgreSQL, brand-themed dashboard shell |
-| **2. Users & Departments** | Full CRUD, search, role assignment, last-admin protection, audit log on every mutation |
+| **2. Users & Departments** | Create + list users, role assignment, departments, audit log on every mutation |
 | **3. Training** | Multi-module courses, lesson-by-lesson progress tracking, mandatory/optional flags, self-enrol or admin-assign |
 | **4. Simulation Engine** | EMAIL / SMS / fake LOGIN_PAGE viewers; live `OPENED`/`CLICKED_LINK`/`SUBMITTED_CREDENTIALS`/`REPORTED`/`IGNORED` tracking; **credentials are NEVER stored** — only lengths |
 | **5. Campaigns + Auto-Remediation** | BullMQ-scheduled launches, dept/role/all-users targeting, automatic enrolment in remediation training the moment someone fails |

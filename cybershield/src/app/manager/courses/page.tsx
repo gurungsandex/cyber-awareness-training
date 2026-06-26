@@ -13,6 +13,8 @@ export default async function ManagerCoursesPage() {
   if (!["ADMIN", "MANAGER"].includes(role)) redirect("/");
 
   const managerId = session.user.id!;
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   // For managers: only show courses explicitly granted by an admin.
   // For admins accessing this view: show all published courses.
@@ -20,12 +22,13 @@ export default async function ManagerCoursesPage() {
     role === "ADMIN"
       ? null
       : db.managerGrant.findMany({ where: { managerId }, select: { courseId: true } }).then((g) => g.map((x) => x.courseId)),
-    db.department.findMany({ orderBy: { name: "asc" } }),
+    db.department.findMany({ where: tenantFilter, orderBy: { name: "asc" } }),
   ]);
 
   const courses = await db.course.findMany({
     where: {
       status: "PUBLISHED",
+      ...tenantFilter,
       ...(grantedCourseIds !== null && { id: { in: grantedCourseIds } }),
     },
     include: {

@@ -21,7 +21,7 @@ export default async function UsersPage() {
 
   const [users, tenant] = await Promise.all([
     db.user.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, ...(tenantId ? { tenantId } : {}) },
       include: { department: true },
       orderBy: { createdAt: "desc" },
     }),
