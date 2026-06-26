@@ -12,9 +12,10 @@ const schema = z.object({
 export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const managers = await db.user.findMany({
-    where: { role: "MANAGER", deletedAt: null },
+    where: { role: "MANAGER", deletedAt: null, ...(tenantId ? { tenantId } : {}) },
     include: {
       department: { select: { name: true } },
       managerGrants: { include: { course: { select: { id: true, title: true } } } },
@@ -28,8 +29,17 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const body = schema.parse(await req.json());
+
+  if (tenantId) {
+    const [manager, course] = await Promise.all([
+      db.user.findFirst({ where: { id: body.managerId, role: "MANAGER", tenantId } }),
+      db.course.findFirst({ where: { id: body.courseId, tenantId } }),
+    ]);
+    if (!manager || !course) return bad("Manager or course not found", 404);
+  }
 
   if (body.grant) {
     await db.managerGrant.upsert({
