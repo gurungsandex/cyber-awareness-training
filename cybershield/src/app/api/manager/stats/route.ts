@@ -5,11 +5,13 @@ export async function GET() {
   const ctx = await requireRole("MANAGER");
   if ("status" in ctx) return ctx;
   const role = (ctx.user as any).role;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const users = await db.user.findMany({
     where: {
       deletedAt: null,
       role: "EMPLOYEE",
+      ...(tenantId ? { tenantId } : {}),
       ...(role === "MANAGER" ? { managerId: ctx.user.id } : {}),
     },
     include: {

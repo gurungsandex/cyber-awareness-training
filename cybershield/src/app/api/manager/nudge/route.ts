@@ -12,9 +12,10 @@ export async function POST(req: NextRequest) {
   if (!targetUserId) return NextResponse.json({ error: "targetUserId required" }, { status: 400 });
 
   const senderId = session.user.id!;
+  const tenantId = (session.user as any).tenantId ?? null;
 
   const target = await db.user.findFirst({
-    where: { id: targetUserId, deletedAt: null },
+    where: { id: targetUserId, deletedAt: null, ...(tenantId ? { tenantId } : {}) },
     select: { id: true, managerId: true },
   });
   if (!target) return NextResponse.json({ error: "Target user not found" }, { status: 404 });
