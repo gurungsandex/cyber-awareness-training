@@ -61,6 +61,27 @@ the now-running login page — a screen reader landing on either input
 would not announce its label (WCAG 1.3.1, 4.1.2). Added matching
 `id`/`htmlFor` pairs (`login-email`, `login-password`).
 
+## Assessment endpoints missing enrollment check — Fixed (High, cross-tenant)
+Audited the core training-completion workflow (assessment fetch/submit)
+live, since auth/RBAC had been verified but the actual training product
+flow had not. `GET /api/assessments/[id]/questions` and
+`POST /api/assessments/[id]/submit` checked only that the caller was
+*authenticated*, never that they were enrolled in the assessment's
+course — confirmed live by fetching another tenant's assessment
+questions as an unenrolled employee, which returned the full question
+set unauthorized. This let any authenticated user (across tenants) take
+any assessment by guessing/discovering its ID and receive a real
+certificate for a course they were never assigned, polluting completion
+records and risk scores. Fixed by requiring an `Enrollment` row for
+`(userId, courseId)` in both routes (403 if absent). Verified live both
+directions: an unenrolled user now gets 403, and after creating a real
+enrollment the same user successfully receives questions — confirmed via
+the running app against the local database, then reverted the test
+enrollment. The sibling routes for the same workflow
+(`inbox/[id]/open`, `inbox/[id]/report`, `enrollments/[id]/complete`)
+were checked too and were already correctly scoped by `userId` in their
+query `where` clauses — no change needed there.
+
 ## Account deactivation — Fixed (missing integration)
 The `User.deletedAt` field was read and filtered on by every single user
 query across the app (18 query sites grepped) — implying soft-delete was

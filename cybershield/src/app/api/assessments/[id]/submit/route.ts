@@ -15,6 +15,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     if (!assessment) return bad("Assessment not found", 404);
 
+    const enrollment = await db.enrollment.findUnique({
+      where: { userId_courseId: { userId: ctx.user.id, courseId: assessment.courseId } },
+    });
+    if (!enrollment) return bad("Not enrolled in this course", 403);
+
     // Score server-side
     const { scorePct, passed, detailed } = scoreAssessment(assessment.questions, body.answers, assessment.passMark);
 
