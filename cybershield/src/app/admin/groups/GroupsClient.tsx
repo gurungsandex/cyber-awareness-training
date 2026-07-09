@@ -120,8 +120,9 @@ export function GroupsClient({ initialDepartments }: Props) {
         <div className="rounded-card border border-accent/30 bg-accent/5 p-5 space-y-3">
           <p className="text-sm font-medium text-text-primary">Create new group</p>
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Group name *</label>
+            <label htmlFor="group-name" className="text-xs text-text-muted mb-1 block">Group name *</label>
             <Input
+              id="group-name"
               placeholder="e.g. DevOps, Customer Success, Legal"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -130,8 +131,9 @@ export function GroupsClient({ initialDepartments }: Props) {
             />
           </div>
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Description (optional)</label>
+            <label htmlFor="group-desc" className="text-xs text-text-muted mb-1 block">Description (optional)</label>
             <Input
+              id="group-desc"
               placeholder="Brief description of this group's role"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}

@@ -81,7 +81,7 @@ export function MicroAssessmentWidget({ courseTitle, enrollmentId, questions, on
             <p className="text-xs text-text-muted">{courseTitle} · {current + 1}/{questions.length}</p>
           </div>
         </div>
-        <button onClick={onDismiss} className="p-1 rounded hover:bg-elevated text-text-muted">
+        <button onClick={onDismiss} aria-label="Dismiss" className="p-1 rounded hover:bg-elevated text-text-muted">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>

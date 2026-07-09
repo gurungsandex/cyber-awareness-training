@@ -286,6 +286,63 @@ tenant, rather than as belonging to no one. Verified with
 `npx tsc --noEmit`, `npm run lint`, `npm test` (33/33 passing), and
 `npm run build`, all clean.
 
+## Form label/input accessibility missing across all admin and registration forms — Fixed (Medium, WCAG 1.3.1/4.1.2)
+The earlier audit fixed the Login form's label associations. A full
+grep of `<label>` elements across the entire `src/app/` tree found that
+every other form in the app had the same defect — `<label>` elements
+with no `htmlFor` attribute and their corresponding inputs with no `id`,
+meaning screen readers cannot announce the field's label when focus
+lands on the input. Affected forms:
+
+- `src/app/register/[token]/RegistrationForm.tsx` — 6 fields (Full Name,
+  Work Email, Job Title, Department select, Password, Confirm Password).
+  This is a public-facing form used by every new employee at registration
+  time — highest impact.
+- `src/app/admin/campaigns/CreateCampaignButton.tsx` — Campaign Name
+  input, Simulation Template select, Scheduled Launch datetime input.
+- `src/app/admin/courses/AssignCourseButton.tsx` — Group/Department
+  select, Role select, Due Days range input, Recurring Months range input.
+  Also added `aria-pressed` and `aria-label` to the custom toggle button
+  for "Recurring assignment" (a `<button>` acting as a toggle switch with
+  no text content).
+- `src/app/admin/groups/GroupsClient.tsx` — Group Name input, Description
+  input.
+- `src/app/employee/micro-assessment/MicroAssessmentWidget.tsx` — Dismiss
+  button renders only an `<X>` icon with no text; added `aria-label="Dismiss"`.
+
+Fix: added matching `htmlFor`/`id` pairs to every label-input pair across
+all five files. Verified `npx tsc --noEmit`, `npm run lint`, `npm test`
+(33/33), and `npm run build`, all clean.
+
+## Worker background jobs never enrolled new hires or remediation users — Fixed (Critical, core feature non-functional)
+`workers/newhire.worker.ts` and `workers/remediation.worker.ts` both
+use `db.course.findMany`/`findFirst` with the nullable `tenantId` exact-
+match guard: `...(user?.tenantId ? { tenantId: user.tenantId } : {})`.
+This is the same defect class as the six admin/manager page fixes above —
+an exact-match filter on a nullable column that never matches the 10 seeded
+global courses (all with `tenantId: null`). The consequence:
+
+- **New hire worker**: when a new employee registers, the newhire job was
+  supposed to auto-enroll them in all mandatory courses. With this filter,
+  `mandatory.length` was always 0, the notification would say "enrolled in
+  0 mandatory course(s)", and no enrollments were ever created.
+- **Remediation worker**: when an employee clicked a phishing link, the
+  remediation job was supposed to enroll them in a mandatory course as
+  corrective training. With this filter, `remediationCourse` was always
+  `null`, returning `{ skipped: "no_course" }` on every invocation.
+
+Both jobs are silent about failures (they return success result objects
+rather than throwing), so these failures would not have been obvious from
+BullMQ's queue dashboard — they would simply appear as successful jobs
+that happened to enroll nobody.
+
+Fixed both workers with the OR-with-null pattern:
+```ts
+...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {})
+```
+Verified `npx tsc --noEmit`, `npm run lint`, `npm test` (33/33), and
+`npm run build`, all clean.
+
 ## Cross-browser / responsive UI testing, E2E tests — Infeasible in this sandbox
 This sandbox has no real browser matrix and Playwright cannot reach this
 app's running dev server in a way that exercises realistic user flows

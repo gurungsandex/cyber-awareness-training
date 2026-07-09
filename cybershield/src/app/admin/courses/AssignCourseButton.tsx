@@ -115,8 +115,9 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
 
                   {target === "DEPARTMENT" && (
                     <div>
-                      <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Group / Department</label>
+                      <label htmlFor="assign-department" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Group / Department</label>
                       <select
+                        id="assign-department"
                         value={departmentId}
                         onChange={(e) => setDepartmentId(e.target.value)}
                         className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
@@ -131,8 +132,9 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
 
                   {target === "ROLE" && (
                     <div>
-                      <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Role</label>
+                      <label htmlFor="assign-role" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">Role</label>
                       <select
+                        id="assign-role"
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                         className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
@@ -146,10 +148,11 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
 
                   {/* Due date */}
                   <div>
-                    <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">
+                    <label htmlFor="assign-due-days" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1">
                       Due in <span className="text-accent font-semibold">{dueInDays} days</span>
                     </label>
                     <input
+                      id="assign-due-days"
                       type="range" min={7} max={90} step={7}
                       value={dueInDays}
                       onChange={(e) => setDueInDays(Number(e.target.value))}
@@ -164,6 +167,8 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                   <div className="rounded-lg border border-border p-3.5 space-y-3">
                     <button
                       onClick={() => setRecurring((r) => !r)}
+                      aria-pressed={recurring}
+                      aria-label="Toggle recurring assignment"
                       className="w-full flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2">
@@ -182,10 +187,11 @@ export function AssignCourseButton({ courseId, courseTitle, departments }: Props
                     </button>
                     {recurring && (
                       <div>
-                        <label className="text-xs text-text-muted block mb-1">
+                        <label htmlFor="assign-recurring-months" className="text-xs text-text-muted block mb-1">
                           Re-assign every <span className="text-accent font-semibold">{recurringMonths} months</span>
                         </label>
                         <input
+                          id="assign-recurring-months"
                           type="range" min={3} max={24} step={3}
                           value={recurringMonths}
                           onChange={(e) => setRecurringMonths(Number(e.target.value))}

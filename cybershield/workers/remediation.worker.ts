@@ -9,8 +9,13 @@ export const remediationWorker = new Worker(
     const user = await db.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
 
     // Find mandatory remediation courses (using isMandatory + the seeded phishing course as fallback)
+    const tenantId = user?.tenantId ?? null;
     const remediationCourse = await db.course.findFirst({
-      where: { isMandatory: true, status: "PUBLISHED", ...(user?.tenantId ? { tenantId: user.tenantId } : {}) },
+      where: {
+        isMandatory: true,
+        status: "PUBLISHED",
+        ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}),
+      },
       orderBy: { createdAt: "asc" },
     });
     if (!remediationCourse) return { skipped: "no_course" };

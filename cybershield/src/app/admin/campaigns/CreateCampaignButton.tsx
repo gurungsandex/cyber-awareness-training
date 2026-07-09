@@ -99,8 +99,9 @@ export function CreateCampaignButton({ templates }: Props) {
               ) : (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Campaign Name</label>
+                    <label htmlFor="camp-name" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Campaign Name</label>
                     <Input
+                      id="camp-name"
                       placeholder="e.g. Q1 2025 Phishing Simulation"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -108,8 +109,9 @@ export function CreateCampaignButton({ templates }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Simulation Template</label>
+                    <label htmlFor="camp-template" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Simulation Template</label>
                     <select
+                      id="camp-template"
                       value={templateId}
                       onChange={(e) => setTemplateId(e.target.value)}
                       className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
@@ -128,8 +130,9 @@ export function CreateCampaignButton({ templates }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Scheduled Launch</label>
+                    <label htmlFor="camp-scheduled-at" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Scheduled Launch</label>
                     <Input
+                      id="camp-scheduled-at"
                       type="datetime-local"
                       value={scheduledAt}
                       onChange={(e) => setScheduledAt(e.target.value)}
