@@ -35,3 +35,12 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Dummy values so Next.js build doesn't fail on missing env vars
+          DATABASE_URL: "postgresql://x:x@localhost:5432/x"
+          NEXTAUTH_SECRET: "ci-placeholder-secret-32-chars-min"
+          NEXTAUTH_URL: "http://localhost:3000"
+          REDIS_URL: "redis://localhost:6379"

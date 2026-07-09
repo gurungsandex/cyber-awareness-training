@@ -352,3 +352,74 @@ and the logger. A real E2E suite (Playwright/Cypress against a staging
 deploy) and a cross-browser pass (Safari/Firefox/Chrome/mobile viewports)
 should be run in CI against a deployed staging environment before launch
 — recorded as a deployment-gate follow-up, not performed here.
+
+## CI pipeline missing production build step — Fixed (Medium, silent build-breakage risk)
+`.github/workflows/ci.yml` ran lint, typecheck, and unit tests but did not
+run `npm run build`. A change that passes all three checks but breaks the
+Next.js production build (e.g., a middleware importing a Node-only module,
+an invalid CSS token, a dynamic import error) would merge to `main` and
+only fail at deploy time — potentially during a production rollout.
+
+Added a `Build` step at the end of the CI job with the minimum required
+environment variables (dummy values are sufficient; the build only needs
+them defined, not valid). The step catches Edge-runtime bundle overflows
+(Middleware > 85kB indicates a Node-only library leaked in) and any other
+build-time errors before they reach deployment.
+
+## No .env.example — Fixed (Low, developer experience / security hygiene)
+The repository contained no `.env.example` documenting required environment
+variables. A new deployment operator had to read multiple source files
+(`docker-compose.yml`, `src/lib/auth.ts`, `src/lib/redis.ts`) to discover
+the full required variable set. The missing file also created a risk of an
+operator running the app with the default `DB_PASSWORD=cybershield_change_me`
+or a weak `NEXTAUTH_SECRET`.
+
+Added `cybershield/.env.example` listing all six required/optional variables
+with comments explaining each one and an explicit `CHANGE_ME` prompt for
+secrets. The actual `.env` is already in `.gitignore` and not tracked.
+
+## TLS not configured in nginx — Accepted risk (operator responsibility)
+`docker/nginx.conf` listens on port 80 only. The TLS server block and
+443 port binding are commented out with inline instructions
+(`# uncomment after wiring TLS certs into ./certs`). In production,
+all credential and session-token traffic flows unencrypted between the
+client and the nginx reverse proxy.
+
+This is a deployment-environment responsibility, not a code defect. The
+nginx config already contains a complete, correct TLS server block and the
+Docker Compose file already has the `443:443` port mapping and the
+`./certs` volume mount — both just need uncommenting. HSTS is also pre-
+wired (commented out) for after TLS is active.
+
+**Deployment gate:** TLS must be enabled before any production launch.
+Instructions:
+1. Place `fullchain.pem` and `privkey.pem` in `docker/certs/`.
+2. Uncomment `443:443` in `docker-compose.yml`.
+3. Uncomment the `./certs` volume mount in the `nginx` service.
+4. Uncomment the TLS `server` block in `nginx.conf`.
+5. Uncomment `add_header Strict-Transport-Security` in `nginx.conf`.
+6. Set `NEXTAUTH_URL` to `https://your-domain`.
+
+## No database backup procedure documented — Accepted risk (operator responsibility)
+`docker-compose.yml` mounts a named Docker volume (`cs_postgres_data`) for
+Postgres data. There is no documented backup/restore procedure. A volume
+deletion (`docker volume rm`) or a host disk failure would cause permanent
+data loss with no recovery path.
+
+This is outside the scope of application code but is a launch-blocking
+operational gap. Recommended minimum before launch:
+
+```bash
+# Daily backup (run via cron on the Docker host)
+docker exec cybershield-postgres-1 \
+  pg_dump -U cybershield cybershield | gzip \
+  > /backups/cybershield-$(date +%Y%m%d).sql.gz
+
+# Restore from backup
+gunzip -c /backups/cybershield-YYYYMMDD.sql.gz | \
+  docker exec -i cybershield-postgres-1 \
+  psql -U cybershield cybershield
+```
+
+Retention, off-host storage (S3, SFTP), and restore drills are
+organization-specific decisions — record them in a runbook before launch.
