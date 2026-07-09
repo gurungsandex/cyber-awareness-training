@@ -9,9 +9,12 @@ import { CampaignsTable } from "./CampaignsTable";
 export default async function CampaignsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   const [campaigns, templates] = await Promise.all([
     db.campaign.findMany({
+      where: tenantFilter,
       include: {
         template: true,
         _count: { select: { interactions: true, targets: true } },
@@ -19,6 +22,7 @@ export default async function CampaignsPage() {
       orderBy: { createdAt: "desc" },
     }),
     db.simulationTemplate.findMany({
+      where: tenantFilter,
       orderBy: [{ type: "asc" }, { name: "asc" }],
       select: { id: true, name: true, type: true, difficulty: true, attackTactic: true },
     }),
@@ -49,7 +53,7 @@ export default async function CampaignsPage() {
         <div className="rounded-card border-2 border-dashed border-border py-16 text-center">
           <Siren className="h-12 w-12 text-text-muted mx-auto mb-3 opacity-30" />
           <p className="text-text-secondary font-medium">No campaigns yet</p>
-          <p className="text-sm text-text-muted mt-1">Click "New Campaign" to create your first phishing simulation.</p>
+          <p className="text-sm text-text-muted mt-1">Click &ldquo;New Campaign&rdquo; to create your first phishing simulation.</p>
         </div>
       ) : (
         <Card>

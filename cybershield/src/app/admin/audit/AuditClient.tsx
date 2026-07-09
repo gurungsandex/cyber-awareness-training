@@ -129,6 +129,7 @@ export function AuditClient({ logs }: { logs: AuditLog[] }) {
                       <button
                         onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                         className="p-1 rounded hover:bg-elevated text-text-muted"
+                        aria-label={expanded === log.id ? "Hide details" : "Show details"}
                       >
                         {expanded === log.id
                           ? <ChevronDown className="h-3.5 w-3.5" />

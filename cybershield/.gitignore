@@ -27,3 +27,4 @@ npm-debug.log*
 
 # Certificates generated at runtime
 public/certificates/
+*.rdb

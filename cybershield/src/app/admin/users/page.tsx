@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { RegistrationLinkPanel } from "./RegistrationLinkPanel";
+import { DeactivateUserButton } from "./DeactivateUserButton";
 
 function roleVariant(role: string): "default" | "secondary" | "destructive" {
   if (role === "ADMIN") return "destructive";
@@ -21,7 +22,7 @@ export default async function UsersPage() {
 
   const [users, tenant] = await Promise.all([
     db.user.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, ...(tenantId ? { tenantId } : {}) },
       include: { department: true },
       orderBy: { createdAt: "desc" },
     }),
@@ -70,7 +71,8 @@ export default async function UsersPage() {
                   <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Role</th>
                   <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Department</th>
                   <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Risk Score</th>
-                  <th className="text-left py-3 text-xs font-medium text-text-muted uppercase tracking-wide">Joined</th>
+                  <th className="text-left py-3 pr-4 text-xs font-medium text-text-muted uppercase tracking-wide">Joined</th>
+                  <th className="text-left py-3 text-xs font-medium text-text-muted uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -87,7 +89,12 @@ export default async function UsersPage() {
                         {u.riskScore}
                       </span>
                     </td>
-                    <td className="py-3 text-text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3 pr-4 text-text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3">
+                      {u.id !== session.user.id && (
+                        <DeactivateUserButton userId={u.id} userName={u.name} />
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

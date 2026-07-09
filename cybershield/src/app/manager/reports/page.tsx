@@ -7,11 +7,23 @@ import { BarChart3 } from "lucide-react";
 export default async function ManagerReportsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  const role = (session.user as any).role;
+  const tenantId = (session.user as any).tenantId ?? null;
+  const managerId = session.user.id!;
+
+  const manager = role === "MANAGER" ? await db.user.findUnique({ where: { id: managerId }, select: { departmentId: true } }) : null;
 
   const departments = await db.department.findMany({
+    where: {
+      ...(tenantId ? { tenantId } : {}),
+      ...(role === "MANAGER" ? { id: manager?.departmentId ?? "__none__" } : {}),
+    },
     include: {
       users: {
-        where: { role: "EMPLOYEE", deletedAt: null },
+        where: {
+          role: "EMPLOYEE",
+          deletedAt: null,
+        },
         select: {
           riskScore: true,
           enrollments: { select: { status: true } },

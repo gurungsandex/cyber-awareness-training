@@ -12,6 +12,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   });
   if (!assessment) return bad("Not found", 404);
 
+  const enrollment = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId: ctx.user.id, courseId: assessment.courseId } },
+  });
+  if (!enrollment) return bad("Not enrolled in this course", 403);
+
   const shuffled = [...assessment.questions].sort(() => Math.random() - 0.5);
   const masked = shuffled.map(q => ({
     id: q.id, text: q.text,

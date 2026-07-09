@@ -19,6 +19,8 @@ function riskLevel(score: number) {
 export default async function ReportsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   const [
     deptStats,
@@ -31,6 +33,7 @@ export default async function ReportsPage() {
     recentCerts,
   ] = await Promise.all([
     db.department.findMany({
+      where: tenantFilter,
       include: {
         users: {
           where: { deletedAt: null },
@@ -38,13 +41,29 @@ export default async function ReportsPage() {
         },
       },
     }),
-    db.simulationInteraction.groupBy({ by: ["action"], _count: { action: true } }),
-    db.enrollment.findMany({ select: { status: true, dueAt: true, completedAt: true } }),
-    db.assessmentAttempt.findMany({ select: { passed: true, scorePct: true } }),
-    db.user.findMany({ where: { deletedAt: null, role: "EMPLOYEE" }, select: { riskScore: true } }),
-    db.enrollment.count({ where: { dueAt: { lt: new Date() }, status: { notIn: ["COMPLETED"] } } }),
+    db.simulationInteraction.groupBy({
+      by: ["action"],
+      _count: { action: true },
+      where: tenantId ? { campaign: { tenantId } } : {},
+    }),
+    db.enrollment.findMany({
+      where: tenantId ? { user: { tenantId } } : {},
+      select: { status: true, dueAt: true, completedAt: true },
+    }),
+    db.assessmentAttempt.findMany({
+      where: tenantId ? { user: { tenantId } } : {},
+      select: { passed: true, scorePct: true },
+    }),
+    db.user.findMany({ where: { deletedAt: null, role: "EMPLOYEE", ...tenantFilter }, select: { riskScore: true } }),
+    db.enrollment.count({
+      where: {
+        dueAt: { lt: new Date() },
+        status: { notIn: ["COMPLETED"] },
+        ...(tenantId ? { user: { tenantId } } : {}),
+      },
+    }),
     db.course.findMany({
-      where: { status: "PUBLISHED" },
+      where: { status: "PUBLISHED", ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) },
       select: {
         id: true, title: true, isMandatory: true, complianceFrameworks: true,
         _count: { select: { enrollments: true } },
@@ -53,6 +72,7 @@ export default async function ReportsPage() {
       orderBy: { isMandatory: "desc" },
     }),
     db.certificate.findMany({
+      where: tenantId ? { user: { tenantId } } : {},
       orderBy: { issuedAt: "desc" },
       take: 5,
       include: { user: { select: { name: true } } },

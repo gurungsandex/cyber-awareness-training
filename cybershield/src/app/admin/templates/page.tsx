@@ -23,8 +23,10 @@ const difficultyVariant: Record<string, any> = {
 export default async function TemplatesPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
+  const tenantId = (session.user as any).tenantId ?? null;
 
   const templates = await db.simulationTemplate.findMany({
+    where: tenantId ? { tenantId } : {},
     orderBy: [{ type: "asc" }, { difficulty: "asc" }],
     include: { _count: { select: { campaigns: true } } },
   });

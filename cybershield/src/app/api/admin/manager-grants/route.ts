@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, audit, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -9,12 +9,13 @@ const schema = z.object({
   grant: z.boolean(),
 });
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const managers = await db.user.findMany({
-    where: { role: "MANAGER", deletedAt: null },
+    where: { role: "MANAGER", deletedAt: null, ...(tenantId ? { tenantId } : {}) },
     include: {
       department: { select: { name: true } },
       managerGrants: { include: { course: { select: { id: true, title: true } } } },
@@ -23,13 +24,22 @@ export async function GET() {
   });
 
   return ok({ managers });
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withApiErrorHandling(async (req: NextRequest) => {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const body = schema.parse(await req.json());
+
+  if (tenantId) {
+    const [manager, course] = await Promise.all([
+      db.user.findFirst({ where: { id: body.managerId, role: "MANAGER", tenantId } }),
+      db.course.findFirst({ where: { id: body.courseId, tenantId } }),
+    ]);
+    if (!manager || !course) return bad("Manager or course not found", 404);
+  }
 
   if (body.grant) {
     await db.managerGrant.upsert({
@@ -46,4 +56,4 @@ export async function POST(req: NextRequest) {
   }
 
   return ok({ success: true });
-}
+});

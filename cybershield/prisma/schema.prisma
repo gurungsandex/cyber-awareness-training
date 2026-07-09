@@ -326,6 +326,8 @@ model AssessmentAttempt {
   answers       Json
   submittedAt   DateTime   @default(now())
   certificate   Certificate?
+
+  @@index([userId])
 }
 
 model Certificate {
@@ -338,6 +340,8 @@ model Certificate {
   issuedAt    DateTime @default(now())
   pdfPath     String?
   verifyCode  String   @unique
+
+  @@index([userId])
 }
 
 // ─── Badges ───────────────────────────────────────────────────────────────────

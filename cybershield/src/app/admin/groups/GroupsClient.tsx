@@ -120,8 +120,9 @@ export function GroupsClient({ initialDepartments }: Props) {
         <div className="rounded-card border border-accent/30 bg-accent/5 p-5 space-y-3">
           <p className="text-sm font-medium text-text-primary">Create new group</p>
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Group name *</label>
+            <label htmlFor="group-name" className="text-xs text-text-muted mb-1 block">Group name *</label>
             <Input
+              id="group-name"
               placeholder="e.g. DevOps, Customer Success, Legal"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -130,8 +131,9 @@ export function GroupsClient({ initialDepartments }: Props) {
             />
           </div>
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Description (optional)</label>
+            <label htmlFor="group-desc" className="text-xs text-text-muted mb-1 block">Description (optional)</label>
             <Input
+              id="group-desc"
               placeholder="Brief description of this group's role"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
@@ -203,6 +205,7 @@ export function GroupsClient({ initialDepartments }: Props) {
                     onClick={() => startEdit(dept)}
                     className="p-1.5 rounded-lg hover:bg-elevated text-text-muted hover:text-text-primary transition-colors"
                     title="Edit group"
+                    aria-label="Edit group"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -215,6 +218,7 @@ export function GroupsClient({ initialDepartments }: Props) {
                         : "hover:bg-danger/10 text-text-muted hover:text-danger"
                     )}
                     title={dept._count.users > 0 ? "Reassign members before deleting" : "Delete group"}
+                    aria-label={dept._count.users > 0 ? "Reassign members before deleting" : "Delete group"}
                     disabled={dept._count.users > 0}
                   >
                     <Trash2 className="h-3.5 w-3.5" />

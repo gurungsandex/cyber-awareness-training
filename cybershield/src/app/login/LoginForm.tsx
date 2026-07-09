@@ -53,10 +53,11 @@ export function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Email</label>
+            <label htmlFor="login-email" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
               <Input
+                id="login-email"
                 type="email"
                 placeholder="you@company.com"
                 value={email}
@@ -68,10 +69,11 @@ export function LoginForm() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
+            <label htmlFor="login-password" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
               <Input
+                id="login-password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
@@ -87,12 +89,14 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-elevated border border-border p-4 text-xs text-text-muted space-y-1">
-          <p className="font-medium text-text-secondary">Demo accounts</p>
-          <p className="font-mono">admin@cybershield.local / ChangeMe!2026</p>
-          <p className="font-mono">manager@cybershield.local / Manager!2026</p>
-          <p className="font-mono">alice.chen@cybershield.local / Employee!2026</p>
-        </div>
+        {process.env.NODE_ENV !== "production" && (
+          <div className="mt-6 rounded-lg bg-elevated border border-border p-4 text-xs text-text-muted space-y-1">
+            <p className="font-medium text-text-secondary">Demo accounts (dev only)</p>
+            <p className="font-mono">admin@cybershield.local / ChangeMe!2026</p>
+            <p className="font-mono">manager@cybershield.local / Manager!2026</p>
+            <p className="font-mono">alice.chen@cybershield.local / Employee!2026</p>
+          </div>
+        )}
       </div>
     </div>
   );

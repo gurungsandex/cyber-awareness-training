@@ -100,16 +100,16 @@ export function DepartmentsClient({ initial }: { initial: Department[] }) {
                   <div className="flex items-center gap-1.5 justify-end">
                     {editId === d.id ? (
                       <>
-                        <button onClick={() => save(d.id)} disabled={busy} className="p-1.5 rounded hover:bg-success/10 text-success" title="Save">
+                        <button onClick={() => save(d.id)} disabled={busy} className="p-1.5 rounded hover:bg-success/10 text-success" title="Save" aria-label="Save">
                           <Check className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => setEditId(null)} className="p-1.5 rounded hover:bg-elevated text-text-muted" title="Cancel">
+                        <button onClick={() => setEditId(null)} className="p-1.5 rounded hover:bg-elevated text-text-muted" title="Cancel" aria-label="Cancel">
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => startEdit(d)} className="p-1.5 rounded hover:bg-elevated text-text-muted hover:text-text-primary" title="Edit">
+                        <button onClick={() => startEdit(d)} className="p-1.5 rounded hover:bg-elevated text-text-muted hover:text-text-primary" title="Edit" aria-label="Edit">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
@@ -117,6 +117,7 @@ export function DepartmentsClient({ initial }: { initial: Department[] }) {
                           disabled={busy || d._count.users > 0}
                           className={cn("p-1.5 rounded hover:bg-danger/10 text-text-muted hover:text-danger", d._count.users > 0 && "opacity-30 cursor-not-allowed")}
                           title={d._count.users > 0 ? "Cannot delete — employees still assigned" : "Delete"}
+                          aria-label={d._count.users > 0 ? "Cannot delete — employees still assigned" : "Delete"}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>

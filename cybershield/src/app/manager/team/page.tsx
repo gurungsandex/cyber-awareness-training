@@ -10,9 +10,18 @@ export default async function TeamPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const senderId = session.user.id!;
+  const role = (session.user as any).role as string;
+  const tenantId = (session.user as any).tenantId ?? null;
+
+  const manager = role === "MANAGER" ? await db.user.findUnique({ where: { id: senderId }, select: { departmentId: true } }) : null;
 
   const users = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
+    where: {
+      deletedAt: null,
+      role: "EMPLOYEE",
+      ...(tenantId ? { tenantId } : {}),
+      ...(role === "MANAGER" ? { departmentId: manager?.departmentId ?? "__none__" } : {}),
+    },
     include: {
       department: true,
       enrollments: {

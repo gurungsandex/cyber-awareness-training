@@ -7,10 +7,12 @@ import { KeyRound } from "lucide-react";
 export default async function ManagerGrantsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   const [managers, courses] = await Promise.all([
     db.user.findMany({
-      where: { role: "MANAGER", deletedAt: null },
+      where: { role: "MANAGER", deletedAt: null, ...tenantFilter },
       include: {
         department: { select: { name: true } },
         managerGrants: { select: { courseId: true } },
@@ -18,7 +20,7 @@ export default async function ManagerGrantsPage() {
       orderBy: { name: "asc" },
     }),
     db.course.findMany({
-      where: { status: "PUBLISHED" },
+      where: { status: "PUBLISHED", ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) },
       orderBy: [{ isMandatory: "desc" }, { title: "asc" }],
       select: { id: true, title: true, isMandatory: true },
     }),

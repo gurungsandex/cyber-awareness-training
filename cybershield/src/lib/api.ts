@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "./auth";
 import { db } from "./db";
 import { ZodError } from "zod";
+import { logger } from "./logger";
 
 export function ok(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
@@ -29,8 +30,24 @@ export function handleZodError(e: unknown) {
   if (e instanceof ZodError) {
     return bad(e.errors.map((x) => x.message).join(", "));
   }
-  console.error(e);
+  logger.error("Unhandled API error", e);
   return bad("Internal server error", 500);
+}
+
+// Ensures every route handler returns the app's standard `{ error }` JSON
+// shape on failure instead of Next.js's default error page — route handlers
+// that throw (e.g. an unexpected Prisma error) would otherwise produce an
+// inconsistent, framework-shaped response instead of our API's contract.
+export function withApiErrorHandling<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<Response>
+): (...args: Args) => Promise<Response> {
+  return async (...args: Args) => {
+    try {
+      return await handler(...args);
+    } catch (e) {
+      return handleZodError(e);
+    }
+  };
 }
 
 export async function audit(
@@ -44,7 +61,7 @@ export async function audit(
     await db.auditLog.create({
       data: { userId, action, entity, entityId, metadata: metadata as any },
     });
-  } catch {
-    // non-fatal
+  } catch (e) {
+    logger.error("Failed to write audit log entry", e, { userId, action, entity, entityId });
   }
 }

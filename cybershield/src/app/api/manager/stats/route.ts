@@ -1,13 +1,26 @@
-import { ok, requireRole } from "@/lib/api";
+import { ok, requireRole, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   const ctx = await requireRole("MANAGER");
   if ("status" in ctx) return ctx;
+  const role = (ctx.user as any).role;
+  const tenantId = (ctx.user as any).tenantId ?? null;
+
+  const manager = role === "MANAGER" ? await db.user.findUnique({ where: { id: ctx.user.id }, select: { departmentId: true } }) : null;
 
   const users = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
-    include: {
+    where: {
+      deletedAt: null,
+      role: "EMPLOYEE",
+      ...(tenantId ? { tenantId } : {}),
+      ...(role === "MANAGER" ? { departmentId: manager?.departmentId ?? "__none__" } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      riskScore: true,
       department: true,
       enrollments: { select: { status: true } },
     },
@@ -21,4 +34,4 @@ export async function GET() {
   const completionRate = allEnrollments.length > 0 ? Math.round((completed / allEnrollments.length) * 100) : 0;
 
   return ok({ totalUsers, atRisk, completionRate, users });
-}
+});

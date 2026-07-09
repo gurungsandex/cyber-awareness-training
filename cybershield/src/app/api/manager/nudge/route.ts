@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { withApiErrorHandling } from "@/lib/api";
 
-export async function POST(req: NextRequest) {
+export const POST = withApiErrorHandling(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const role = (session.user as any).role;
@@ -12,6 +13,19 @@ export async function POST(req: NextRequest) {
   if (!targetUserId) return NextResponse.json({ error: "targetUserId required" }, { status: 400 });
 
   const senderId = session.user.id!;
+  const tenantId = (session.user as any).tenantId ?? null;
+
+  const target = await db.user.findFirst({
+    where: { id: targetUserId, deletedAt: null, ...(tenantId ? { tenantId } : {}) },
+    select: { id: true, departmentId: true },
+  });
+  if (!target) return NextResponse.json({ error: "Target user not found" }, { status: 404 });
+  if (role === "MANAGER") {
+    const manager = await db.user.findUnique({ where: { id: senderId }, select: { departmentId: true } });
+    if (!manager?.departmentId || target.departmentId !== manager.departmentId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   await db.$transaction([
     db.nudgeLog.create({
@@ -29,4 +43,4 @@ export async function POST(req: NextRequest) {
   ]);
 
   return NextResponse.json({ ok: true });
-}
+});

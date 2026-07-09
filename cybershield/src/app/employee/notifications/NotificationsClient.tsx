@@ -129,6 +129,7 @@ export function NotificationsClient({ notifications: initial }: { notifications:
                     onClick={() => markRead(n.id)}
                     className="text-xs text-text-muted hover:text-text-primary transition-colors"
                     title="Mark as read"
+                    aria-label="Mark as read"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                   </button>

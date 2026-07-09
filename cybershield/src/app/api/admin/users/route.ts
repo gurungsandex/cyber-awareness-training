@@ -7,8 +7,9 @@ import bcrypt from "bcryptjs";
 export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
   const users = await db.user.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, ...(tenantId ? { tenantId } : {}) },
     include: { department: true },
     orderBy: { createdAt: "desc" },
   });
@@ -18,6 +19,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
   try {
     const body = createUserSchema.parse(await req.json());
     const hash = await bcrypt.hash(body.password, 12);
@@ -28,6 +30,7 @@ export async function POST(req: NextRequest) {
         passwordHash: hash,
         role: body.role,
         departmentId: body.departmentId,
+        tenantId,
       },
     });
     await audit(ctx.user.id, "USER_CREATE", "User", user.id);

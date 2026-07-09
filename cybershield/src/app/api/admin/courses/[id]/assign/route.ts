@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, audit, withApiErrorHandling} from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -10,19 +10,27 @@ const assignSchema = z.object({
   dueInDays: z.number().int().min(1).max(365).default(30),
 });
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const ctx = await requireRole("ADMIN");
+export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const ctx = await requireRole("MANAGER");
   if ("status" in ctx) return ctx;
+  const tenantId = (ctx.user as any).tenantId ?? null;
 
   const course = await db.course.findUnique({ where: { id: params.id } });
-  if (!course) return bad("Course not found", 404);
+  if (!course || (tenantId && course.tenantId && course.tenantId !== tenantId)) return bad("Course not found", 404);
+
+  if ((ctx.user as any).role === "MANAGER") {
+    const grant = await db.managerGrant.findUnique({
+      where: { managerId_courseId: { managerId: ctx.user.id, courseId: params.id } },
+    });
+    if (!grant) return bad("Forbidden", 403);
+  }
 
   const body = assignSchema.parse(await req.json());
   const dueAt = new Date();
   dueAt.setDate(dueAt.getDate() + body.dueInDays);
 
   // Build user filter
-  const userWhere: any = { deletedAt: null };
+  const userWhere: any = { deletedAt: null, ...(tenantId ? { tenantId } : {}) };
   if (body.target === "DEPARTMENT" && body.departmentId) {
     userWhere.departmentId = body.departmentId;
   } else if (body.target === "ROLE" && body.role) {
@@ -31,32 +39,30 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const users = await db.user.findMany({ where: userWhere, select: { id: true } });
 
-  let enrolled = 0;
-  let skipped = 0;
+  const existingEnrollments = await db.enrollment.findMany({
+    where: { courseId: params.id, userId: { in: users.map((u) => u.id) } },
+    select: { userId: true },
+  });
+  const alreadyEnrolled = new Set(existingEnrollments.map((e) => e.userId));
+  const toEnroll = users.filter((u) => !alreadyEnrolled.has(u.id));
 
-  for (const user of users) {
-    const existing = await db.enrollment.findUnique({
-      where: { userId_courseId: { userId: user.id, courseId: params.id } },
+  if (toEnroll.length > 0) {
+    await db.enrollment.createMany({
+      data: toEnroll.map((u) => ({ userId: u.id, courseId: params.id, dueAt })),
     });
-    if (existing) {
-      skipped++;
-      continue;
-    }
-    await db.enrollment.create({
-      data: { userId: user.id, courseId: params.id, dueAt },
-    });
-    // Notify the user
-    await db.notification.create({
-      data: {
-        userId: user.id,
+    await db.notification.createMany({
+      data: toEnroll.map((u) => ({
+        userId: u.id,
         kind: "TRAINING_ASSIGNED",
         title: `New course assigned: ${course.title}`,
         body: `You have been enrolled in "${course.title}". Please complete it within ${body.dueInDays} days.`,
         link: `/employee/courses`,
-      },
+      })),
     });
-    enrolled++;
   }
+
+  const enrolled = toEnroll.length;
+  const skipped = users.length - toEnroll.length;
 
   await audit(ctx.user.id, "COURSE_ASSIGN", "Course", params.id, {
     enrolled,
@@ -66,4 +72,4 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
 
   return ok({ enrolled, skipped, total: users.length });
-}
+});

@@ -30,9 +30,12 @@ function frameworkLabel(f: string): string {
 export default async function AdminCoursesPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
+  const tenantId = (session.user as any).tenantId ?? null;
+  const tenantFilter = tenantId ? { tenantId } : {};
 
   const [courses, departments] = await Promise.all([
     db.course.findMany({
+      where: tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {},
       orderBy: [{ isMandatory: "desc" }, { title: "asc" }],
       include: {
         _count: { select: { enrollments: true } },
@@ -40,10 +43,10 @@ export default async function AdminCoursesPage() {
         assessments: { include: { _count: { select: { questions: true } } } },
       },
     }),
-    db.department.findMany({ orderBy: { name: "asc" } }),
+    db.department.findMany({ where: tenantFilter, orderBy: { name: "asc" } }),
   ]);
 
-  const totalUsers = await db.user.count({ where: { deletedAt: null } });
+  const totalUsers = await db.user.count({ where: { deletedAt: null, ...tenantFilter } });
 
   return (
     <div className="p-6">
