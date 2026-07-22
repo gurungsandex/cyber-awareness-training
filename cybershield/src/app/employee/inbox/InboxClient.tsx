@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Mail, MailOpen, Flag, Shield, ChevronRight, X } from "lucide-react";
+import { AlertTriangle, Mail, MailOpen, Flag, Shield, ChevronRight, X, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InboxItem {
@@ -43,6 +43,13 @@ export function InboxClient({ items: initialItems }: Props) {
     await fetch(`/api/employee/inbox/${item.id}/report`, { method: "POST" });
     setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, reportedAt: new Date() } : i));
     setSelected((prev) => prev ? { ...prev, reportedAt: new Date() } : prev);
+    setShowRedFlags(true);
+  }
+
+  async function clickLink(item: InboxItem) {
+    await fetch(`/api/employee/inbox/${item.id}/click`, { method: "POST" });
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, clickedAt: new Date(), isRead: true } : i));
+    setSelected((prev) => prev ? { ...prev, clickedAt: new Date() } : prev);
     setShowRedFlags(true);
   }
 
@@ -134,24 +141,45 @@ export function InboxClient({ items: initialItems }: Props) {
             </div>
 
             {/* Actions */}
-            <div className="px-5 py-4 flex items-center gap-3">
-              {!selected.reportedAt ? (
-                <Button
-                  onClick={() => reportPhishing(selected)}
-                  variant="destructive"
-                  className="gap-2"
-                  disabled={isPending}
-                >
-                  <Flag className="h-4 w-4" />
-                  Report as Phishing
-                </Button>
-              ) : (
+            <div className="px-5 py-4 flex flex-wrap items-center gap-3">
+              {!selected.reportedAt && !selected.clickedAt && (
+                <>
+                  <Button
+                    onClick={() => reportPhishing(selected)}
+                    variant="destructive"
+                    className="gap-2"
+                    disabled={isPending}
+                  >
+                    <Flag className="h-4 w-4" />
+                    Report as Phishing
+                  </Button>
+                  <Button
+                    onClick={() => clickLink(selected)}
+                    variant="ghost"
+                    className="gap-2 text-sm text-text-secondary"
+                    disabled={isPending}
+                  >
+                    <MousePointerClick className="h-4 w-4" />
+                    Click the link
+                  </Button>
+                </>
+              )}
+
+              {selected.reportedAt && (
                 <div className="flex items-center gap-2 text-success text-sm font-medium">
                   <Shield className="h-4 w-4" />
                   Good catch! You reported this phishing email.
                 </div>
               )}
-              {selected.reportedAt && (
+
+              {selected.clickedAt && !selected.reportedAt && (
+                <div className="flex items-center gap-2 text-danger text-sm font-medium">
+                  <AlertTriangle className="h-4 w-4" />
+                  This was a phishing simulation — clicking the link would have compromised you.
+                </div>
+              )}
+
+              {(selected.reportedAt || selected.clickedAt) && (
                 <Button
                   variant="ghost"
                   onClick={() => setShowRedFlags((v) => !v)}

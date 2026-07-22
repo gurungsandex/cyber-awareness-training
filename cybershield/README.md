@@ -17,7 +17,7 @@ CyberShield is a self-hosted training platform that lets security teams run real
 | **5. Campaigns + Auto-Remediation** | BullMQ-scheduled launches, dept/role/all-users targeting, automatic enrolment in remediation training the moment someone fails |
 | **6. Assessments & Certificates** | One-question-at-a-time quizzes, server-side scoring, configurable pass mark (default 80%), PDF certificates with verification code, retake-on-fail |
 | **7. Analytics** | Click-rate, report-rate, completion %, avg risk score, 30-day trend chart, department risk heatmap, manager-level team drill-down |
-| **8. AI Content Generation** | Claude-powered phishing templates, SMS lures, assessment questions from lesson content, and "hacker mindset" tactic explanations |
+| **8. AI Content Generation** *(planned)* | Optional Claude-powered generation of phishing templates, SMS lures, and assessment questions. The `ANTHROPIC_API_KEY` hook is wired for config but the generation UI/endpoints are not yet implemented — the platform ships with a full library of hand-authored templates and works fully without it. |
 | **9. Tips & Notifications** | Daily security tip widget, in-app notifications for remediation/new-hire/cert events, accessible UI throughout |
 
 ---
@@ -28,7 +28,7 @@ CyberShield is a self-hosted training platform that lets security teams run real
 - **Backend:** Next.js Route Handlers + Prisma 5 + PostgreSQL 16
 - **Auth:** NextAuth v5 (Credentials provider, JWT sessions, 8h)
 - **Jobs:** BullMQ on Redis 7 — separate worker process
-- **AI:** Anthropic Claude (Sonnet 4) — fully optional, gracefully degrades if no API key
+- **AI (planned/optional):** Anthropic Claude — hook present, gracefully degrades if no API key; generation UI not yet implemented
 - **PDF:** `pdf-lib` (no headless browser needed)
 - **Deployment:** Docker Compose (postgres + redis + web + workers + nginx)
 
@@ -47,7 +47,7 @@ cp .env.example .env
 ```
 
 Edit `.env` — at minimum set `NEXTAUTH_SECRET` (any random 32+ char string).
-`ANTHROPIC_API_KEY` is optional — only needed for AI features in Phase 8.
+`ANTHROPIC_API_KEY` is optional and reserved for the planned Phase 8 AI features — the platform runs fully without it.
 
 ### 2. Run with Docker (recommended)
 ```bash
@@ -90,12 +90,12 @@ npm run workers:dev  # background jobs
 
 ## 🗺️ Try it end-to-end
 
-1. **Log in as admin** → `/admin/simulations` → click **Generate with AI** (or use the seeded template) → Save.
-2. `/admin/campaigns/new` → pick the template → target a department or All Users → schedule for "1 minute from now".
+1. **Log in as admin** → `/admin/templates` → review the seeded phishing templates (email, SMS, and more).
+2. `/admin/campaigns` → **New Campaign** → name it, pick a template → target a department or All Users → schedule for "1 minute from now". *(Requires Redis + the workers process running so the launch job fires.)*
 3. **Log in as an employee** (different browser/incognito) → `/employee/inbox` — your phishing test will appear within ~1 minute.
-4. Click the link to "fail" the test, or hit **Report** to "pass". Failing auto-enrols you in the remediation course.
+4. Click **Click the link** to "fail" the test (raises your risk score and auto-enrols you in remediation), or hit **Report as Phishing** to "pass".
 5. Complete the course → take the assessment → get a PDF certificate.
-6. Back in admin → `/admin/analytics` to see the risk heatmap update.
+6. Back in admin → `/admin/reports` to see analytics and the department risk heatmap update.
 
 ---
 
