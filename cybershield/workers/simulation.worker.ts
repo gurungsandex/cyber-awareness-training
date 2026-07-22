@@ -11,11 +11,20 @@ async function resolveTargetedUsers(campaignId: string, tenantId: string | null)
   const targets = await db.campaignTarget.findMany({ where: { campaignId } });
   if (targets.length === 0) return [];
 
+  // Scope to the campaign's tenant. Legacy unscoped users (tenantId null) are
+  // only included when the campaign itself is unscoped.
+  const baseWhere: Prisma.UserWhereInput = { deletedAt: null, tenantId: tenantId ?? null };
+
+  // An "all users" target matches everyone in the tenant — no OR filter needed.
+  // (An empty object inside a Prisma `OR` array does NOT mean "match all", so we
+  // must branch here rather than push `{}` into the OR list.)
+  if (targets.some((t) => t.allUsers)) {
+    return db.user.findMany({ where: baseWhere, select: { id: true } });
+  }
+
   const orClauses: Prisma.UserWhereInput[] = [];
   for (const t of targets) {
-    if (t.allUsers) {
-      orClauses.push({});
-    } else if (t.departmentId) {
+    if (t.departmentId) {
       orClauses.push({ departmentId: t.departmentId });
     } else if (t.role) {
       orClauses.push({ role: t.role as Role });
@@ -24,13 +33,7 @@ async function resolveTargetedUsers(campaignId: string, tenantId: string | null)
   if (orClauses.length === 0) return [];
 
   return db.user.findMany({
-    where: {
-      deletedAt: null,
-      // Scope to the campaign's tenant. Legacy unscoped users (tenantId null)
-      // are only included when the campaign itself is unscoped.
-      tenantId: tenantId ?? null,
-      OR: orClauses,
-    },
+    where: { ...baseWhere, OR: orClauses },
     select: { id: true },
   });
 }
