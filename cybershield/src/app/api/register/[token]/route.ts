@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { newHireQueue } from "@/lib/queues";
 
 const schema = z.object({
   name:        z.string().min(2).max(100),
@@ -51,7 +52,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await db.user.create({
+  const newUser = await db.user.create({
     data: {
       name,
       email,
@@ -63,6 +64,9 @@ export async function POST(req: Request, { params }: { params: { token: string }
       isNewHire: true,
     },
   });
+
+  // Kick off new-hire onboarding: auto-enrol in mandatory courses + welcome.
+  await newHireQueue.add("enroll", { userId: newUser.id }).catch(() => {});
 
   // Log job title in audit (we store it as a metadata note — jobTitle not in schema as a separate field)
   await db.auditLog.create({

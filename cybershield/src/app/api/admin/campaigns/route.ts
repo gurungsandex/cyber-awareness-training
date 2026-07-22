@@ -19,10 +19,16 @@ export async function POST(req: NextRequest) {
   if ("status" in ctx) return ctx;
   try {
     const body = createCampaignSchema.parse(await req.json());
+
+    // Scope the campaign to the creating admin's tenant so target resolution
+    // (which is tenant-scoped) reaches that tenant's users.
+    const creator = await db.user.findUnique({ where: { id: ctx.user.id }, select: { tenantId: true } });
+
     const campaign = await db.campaign.create({
       data: {
         name: body.name,
         templateId: body.templateId,
+        tenantId: creator?.tenantId ?? null,
         scheduledAt: new Date(body.scheduledAt),
         targets: { create: body.targets },
       },

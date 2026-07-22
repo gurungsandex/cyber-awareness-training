@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { ok, bad, requireAuth, handleZodError, audit } from "@/lib/api";
 import { submitAssessmentSchema } from "@/lib/validations";
 import { certificateQueue, remediationQueue } from "@/lib/queues";
+import { adjustRiskScore, RISK_DELTAS } from "@/lib/risk";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await requireAuth();
@@ -40,9 +41,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: { status: "COMPLETED", progressPct: 100, completedAt: new Date() },
       });
       await certificateQueue.add("issue", { attemptId: attempt.id }).catch(() => {});
+      await adjustRiskScore(ctx.user.id, RISK_DELTAS.PASSED_ASSESSMENT);
     } else {
       // Trigger remediation
       await remediationQueue.add("enroll", { userId: ctx.user.id, trigger: "FAILED_ASSESSMENT" }).catch(() => {});
+      await adjustRiskScore(ctx.user.id, RISK_DELTAS.FAILED_ASSESSMENT);
     }
 
     await audit(ctx.user.id, "ASSESSMENT_SUBMIT", "Assessment", assessment.id, { scorePct, passed });
