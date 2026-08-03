@@ -4,6 +4,21 @@ import fs from "fs/promises";
 import { db } from "./db";
 import crypto from "crypto";
 
+/**
+ * Certificates render with pdf-lib's standard Helvetica, which uses WinAnsi
+ * (CP1252) encoding and throws on any character it can't encode — CJK, emoji,
+ * and many accented letters. Names come from self-registration and can contain
+ * anything, so an unsanitised name would crash the certificate worker and the
+ * user would never receive their certificate. Decompose accents to their base
+ * letters and replace anything still outside printable Latin-1 so a certificate
+ * is always produced.
+ */
+function pdfSafe(text: string): string {
+  const decomposed = text.normalize("NFKD").replace(/[̀-ͯ]/g, "");
+  // eslint-disable-next-line no-control-regex
+  return decomposed.replace(/[^\x20-\x7E\xA0-\xFF]/g, "?").trim();
+}
+
 export async function generateCertificatePdf(attemptId: string): Promise<string> {
   const attempt = await db.assessmentAttempt.findUnique({
     where: { id: attemptId },
@@ -29,15 +44,17 @@ export async function generateCertificatePdf(attemptId: string): Promise<string>
   page.drawText("This certifies that", {
     x: 330, y: height - 180, size: 14, font, color: rgb(0.9, 0.9, 0.9),
   });
-  page.drawText(attempt.user.name, {
-    x: 396 - (attempt.user.name.length * 10) / 2, y: height - 220,
+  const safeName = pdfSafe(attempt.user.name) || "Certificate Recipient";
+  const safeTitle = pdfSafe(attempt.assessment.course.title) || "Security Awareness Training";
+  page.drawText(safeName, {
+    x: Math.max(40, 396 - (safeName.length * 10) / 2), y: height - 220,
     size: 24, font: boldFont, color: rgb(1, 0.84, 0),
   });
   page.drawText("has successfully completed", {
     x: 303, y: height - 265, size: 14, font, color: rgb(0.9, 0.9, 0.9),
   });
-  page.drawText(attempt.assessment.course.title, {
-    x: 396 - (attempt.assessment.course.title.length * 7) / 2, y: height - 305,
+  page.drawText(safeTitle, {
+    x: Math.max(40, 396 - (safeTitle.length * 7) / 2), y: height - 305,
     size: 20, font: boldFont, color: rgb(1, 1, 1),
   });
   page.drawText(`Score: ${attempt.scorePct}%  |  Issued: ${new Date().toLocaleDateString()}  |  Code: ${verifyCode}`, {
