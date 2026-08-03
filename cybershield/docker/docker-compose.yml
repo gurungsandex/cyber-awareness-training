@@ -46,7 +46,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - cs_certificates:/app/public/certificates
+      - cs_certificates:/app/storage/certificates
     healthcheck:
       # busybox wget ships in the alpine base image. --spider on a 503 exits
       # non-zero, so an unhealthy DB is reflected here too.
@@ -70,7 +70,7 @@ services:
       REDIS_PORT: 6379
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
-      - cs_certificates:/app/public/certificates
+      - cs_certificates:/app/storage/certificates
 
   nginx:
     image: nginx:1.27-alpine
