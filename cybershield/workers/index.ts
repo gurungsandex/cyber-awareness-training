@@ -3,20 +3,26 @@ import { simulationWorker } from "./simulation.worker";
 import { remediationWorker } from "./remediation.worker";
 import { newHireWorker } from "./newhire.worker";
 import { certificateWorker } from "./certificate.worker";
+import { logger } from "../src/lib/logger";
 
-console.log("⚡ CyberShield workers starting...");
-console.log("  - simulations:  ", simulationWorker.name);
-console.log("  - remediation:  ", remediationWorker.name);
-console.log("  - newhire:      ", newHireWorker.name);
-console.log("  - certificates: ", certificateWorker.name);
+const workers = [simulationWorker, remediationWorker, newHireWorker, certificateWorker];
 
-async function shutdown() {
-  console.log("\nShutting down workers...");
-  await Promise.all([
-    simulationWorker.close(), remediationWorker.close(),
-    newHireWorker.close(), certificateWorker.close(),
-  ]);
-  process.exit(0);
+logger.info("CyberShield workers starting", { workers: workers.map((w) => w.name) });
+
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  // Guard against a second signal racing the first close.
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info("Shutting down workers", { signal });
+  try {
+    await Promise.all(workers.map((w) => w.close()));
+    logger.info("Workers shut down cleanly");
+    process.exit(0);
+  } catch (err) {
+    logger.error("Error during worker shutdown", { error: (err as Error).message });
+    process.exit(1);
+  }
 }
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
