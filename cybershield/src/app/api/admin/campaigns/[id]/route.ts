@@ -22,6 +22,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  // Only mutate a campaign in the admin's own tenant.
+  const tenantId = (session.user as any).tenantId ?? null;
+  const owned = await db.campaign.findFirst({ where: { id: params.id, tenantId }, select: { id: true } });
+  if (!owned) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+
   try {
     const updated = await db.campaign.update({
       where: { id: params.id },

@@ -31,19 +31,22 @@ export default async function AdminCoursesPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
+  const tenantId = (session.user as any).tenantId ?? null;
   const [courses, departments] = await Promise.all([
+    // Courses are shared library content, but enrollment counts (used for the
+    // completion %) are scoped to this tenant's users.
     db.course.findMany({
       orderBy: [{ isMandatory: "desc" }, { title: "asc" }],
       include: {
-        _count: { select: { enrollments: true } },
+        _count: { select: { enrollments: { where: { user: { tenantId } } } } },
         modules: { include: { _count: { select: { lessons: true } } } },
         assessments: { include: { _count: { select: { questions: true } } } },
       },
     }),
-    db.department.findMany({ orderBy: { name: "asc" } }),
+    db.department.findMany({ where: { tenantId }, orderBy: { name: "asc" } }),
   ]);
 
-  const totalUsers = await db.user.count({ where: { deletedAt: null } });
+  const totalUsers = await db.user.count({ where: { deletedAt: null, tenantId } });
 
   return (
     <div className="p-6">

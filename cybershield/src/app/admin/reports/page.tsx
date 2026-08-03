@@ -20,6 +20,8 @@ export default async function ReportsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
+  const tenantId = (session.user as any).tenantId ?? null;
+
   const [
     deptStats,
     interactionStats,
@@ -31,6 +33,7 @@ export default async function ReportsPage() {
     recentCerts,
   ] = await Promise.all([
     db.department.findMany({
+      where: { tenantId },
       include: {
         users: {
           where: { deletedAt: null },
@@ -38,21 +41,24 @@ export default async function ReportsPage() {
         },
       },
     }),
-    db.simulationInteraction.groupBy({ by: ["action"], _count: { action: true } }),
-    db.enrollment.findMany({ select: { status: true, dueAt: true, completedAt: true } }),
-    db.assessmentAttempt.findMany({ select: { passed: true, scorePct: true } }),
-    db.user.findMany({ where: { deletedAt: null, role: "EMPLOYEE" }, select: { riskScore: true } }),
-    db.enrollment.count({ where: { dueAt: { lt: new Date() }, status: { notIn: ["COMPLETED"] } } }),
+    db.simulationInteraction.groupBy({ by: ["action"], where: { user: { tenantId } }, _count: { action: true } }),
+    db.enrollment.findMany({ where: { user: { tenantId } }, select: { status: true, dueAt: true, completedAt: true } }),
+    db.assessmentAttempt.findMany({ where: { user: { tenantId } }, select: { passed: true, scorePct: true } }),
+    db.user.findMany({ where: { deletedAt: null, role: "EMPLOYEE", tenantId }, select: { riskScore: true } }),
+    db.enrollment.count({ where: { user: { tenantId }, dueAt: { lt: new Date() }, status: { notIn: ["COMPLETED"] } } }),
     db.course.findMany({
       where: { status: "PUBLISHED" },
       select: {
         id: true, title: true, isMandatory: true, complianceFrameworks: true,
-        _count: { select: { enrollments: true } },
-        enrollments: { select: { status: true } },
+        // Enrollment counts are scoped to this tenant's users so completion
+        // rates don't include other tenants.
+        _count: { select: { enrollments: { where: { user: { tenantId } } } } },
+        enrollments: { where: { user: { tenantId } }, select: { status: true } },
       },
       orderBy: { isMandatory: "desc" },
     }),
     db.certificate.findMany({
+      where: { user: { tenantId } },
       orderBy: { issuedAt: "desc" },
       take: 5,
       include: { user: { select: { name: true } } },

@@ -1,4 +1,4 @@
-import { ok, requireRole } from "@/lib/api";
+import { ok, requireRole, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 
 export async function GET() {
@@ -6,7 +6,7 @@ export async function GET() {
   if ("status" in ctx) return ctx;
 
   const users = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
+    where: { deletedAt: null, role: "EMPLOYEE", ...tenantWhere(ctx.user) },
     include: {
       department: true,
       enrollments: { select: { status: true } },

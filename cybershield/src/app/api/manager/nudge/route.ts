@@ -26,6 +26,14 @@ export async function POST(req: NextRequest) {
 
   const senderId = session.user.id!;
 
+  // A manager can only nudge someone in their own tenant.
+  const senderTenantId = (session.user as any).tenantId ?? null;
+  const target = await db.user.findFirst({
+    where: { id: targetUserId, tenantId: senderTenantId },
+    select: { id: true },
+  });
+  if (!target) return NextResponse.json({ error: "Target user not found" }, { status: 404 });
+
   await db.$transaction([
     db.nudgeLog.create({
       data: { senderId, targetUserId, enrollmentId, nudgeType, message },

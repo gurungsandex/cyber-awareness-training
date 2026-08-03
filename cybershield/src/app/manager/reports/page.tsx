@@ -8,7 +8,9 @@ export default async function ManagerReportsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
+  const tenantId = (session.user as any).tenantId ?? null;
   const departments = await db.department.findMany({
+    where: { tenantId },
     include: {
       users: {
         where: { role: "EMPLOYEE", deletedAt: null },

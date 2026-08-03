@@ -8,14 +8,21 @@ export async function POST(req: Request) {
   if (!session?.user || (session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  let tenantId: unknown;
+  let requestedTenantId: unknown;
   try {
-    ({ tenantId } = await req.json());
+    ({ tenantId: requestedTenantId } = await req.json().catch(() => ({})));
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  if (!tenantId || typeof tenantId !== "string")
-    return NextResponse.json({ error: "tenantId required" }, { status: 400 });
+
+  // An admin can only mint a registration link for their own tenant. Ignore any
+  // tenantId in the body except to reject a mismatch — this closes the
+  // cross-tenant token-rotation gap.
+  const tenantId = (session.user as any).tenantId ?? null;
+  if (!tenantId)
+    return NextResponse.json({ error: "Your account is not associated with a tenant" }, { status: 400 });
+  if (requestedTenantId && requestedTenantId !== tenantId)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const token = randomBytes(24).toString("hex");
 

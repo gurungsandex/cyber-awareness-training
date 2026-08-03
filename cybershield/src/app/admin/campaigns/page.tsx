@@ -10,8 +10,11 @@ export default async function CampaignsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
+  const tenantId = (session.user as any).tenantId ?? null;
+
   const [campaigns, templates] = await Promise.all([
     db.campaign.findMany({
+      where: { tenantId },
       include: {
         template: true,
         _count: { select: { interactions: true, targets: true } },

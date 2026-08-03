@@ -7,7 +7,9 @@ export default async function AuditPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
+  const tenantId = (session.user as any).tenantId ?? null;
   const logs = await db.auditLog.findMany({
+    where: { OR: [{ user: { tenantId } }, { tenantId }] },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: { user: { select: { name: true, email: true } } },

@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
-  const dept = await db.department.findUnique({ where: { id: params.id } });
+  const dept = await db.department.findFirst({ where: { id: params.id, tenantId: ctx.user.tenantId ?? null } });
   if (!dept) return bad("Group not found", 404);
 
   let body: z.infer<typeof updateSchema>;
@@ -31,8 +31,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
-  const dept = await db.department.findUnique({
-    where: { id: params.id },
+  const dept = await db.department.findFirst({
+    where: { id: params.id, tenantId: ctx.user.tenantId ?? null },
     include: { _count: { select: { users: true } } },
   });
   if (!dept) return bad("Group not found", 404);

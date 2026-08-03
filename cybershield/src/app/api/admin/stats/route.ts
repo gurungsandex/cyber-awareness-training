@@ -1,26 +1,30 @@
-import { ok, requireRole } from "@/lib/api";
+import { ok, requireRole, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 
 export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
+  const scope = tenantWhere(ctx.user);
+
   const [totalUsers, totalCourses, campaigns, enrollments] = await Promise.all([
-    db.user.count({ where: { deletedAt: null } }),
+    db.user.count({ where: { deletedAt: null, ...scope } }),
+    // Courses are shared library content — not tenant-scoped.
     db.course.count({ where: { status: "PUBLISHED" } }),
     db.campaign.findMany({
+      where: scope,
       orderBy: { createdAt: "desc" },
       take: 5,
       include: { template: true, _count: { select: { interactions: true } } },
     }),
-    db.enrollment.findMany({ select: { status: true } }),
+    db.enrollment.findMany({ where: { user: scope }, select: { status: true } }),
   ]);
 
   const completed = enrollments.filter((e) => e.status === "COMPLETED").length;
   const completionRate = enrollments.length > 0 ? Math.round((completed / enrollments.length) * 100) : 0;
 
   const riskScores = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
+    where: { deletedAt: null, role: "EMPLOYEE", ...scope },
     select: { riskScore: true },
   });
   const avgRisk = riskScores.length > 0

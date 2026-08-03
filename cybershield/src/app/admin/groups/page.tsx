@@ -8,7 +8,9 @@ export default async function GroupsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
+  const tenantId = (session.user as any).tenantId ?? null;
   const departments = await db.department.findMany({
+    where: { tenantId },
     include: { _count: { select: { users: true } } },
     orderBy: { name: "asc" },
   });

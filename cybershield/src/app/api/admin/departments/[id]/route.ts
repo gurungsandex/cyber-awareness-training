@@ -14,6 +14,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
 
+  const tenantId = (session.user as any).tenantId ?? null;
+  const owned = await db.department.findFirst({ where: { id: params.id, tenantId }, select: { id: true } });
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   try {
     const dept = await db.department.update({
       where: { id: params.id },
@@ -29,6 +33,10 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const tenantId = (session.user as any).tenantId ?? null;
+  const owned = await db.department.findFirst({ where: { id: params.id, tenantId }, select: { id: true } });
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const memberCount = await db.user.count({ where: { departmentId: params.id, deletedAt: null } });
   if (memberCount > 0)

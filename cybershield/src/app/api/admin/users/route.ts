@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, handleZodError, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 import { createUserSchema } from "@/lib/validations";
 import { newHireQueue } from "@/lib/queues";
@@ -9,7 +9,7 @@ export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const users = await db.user.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, ...tenantWhere(ctx.user) },
     include: { department: true },
     orderBy: { createdAt: "desc" },
   });
