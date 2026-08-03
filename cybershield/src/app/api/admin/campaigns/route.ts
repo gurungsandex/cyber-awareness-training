@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, requireRole, handleZodError, audit } from "@/lib/api";
+import { ok, requireRole, handleZodError, audit, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 import { createCampaignSchema } from "@/lib/validations";
 import { simulationQueue } from "@/lib/queues";
@@ -8,6 +8,7 @@ export async function GET() {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
   const campaigns = await db.campaign.findMany({
+    where: tenantWhere(ctx.user),
     include: { template: true, _count: { select: { interactions: true } } },
     orderBy: { createdAt: "desc" },
   });

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -14,7 +14,7 @@ export async function GET() {
   if ("status" in ctx) return ctx;
 
   const managers = await db.user.findMany({
-    where: { role: "MANAGER", deletedAt: null },
+    where: { role: "MANAGER", deletedAt: null, ...tenantWhere(ctx.user) },
     include: {
       department: { select: { name: true } },
       managerGrants: { include: { course: { select: { id: true, title: true } } } },
@@ -29,7 +29,19 @@ export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
-  const body = schema.parse(await req.json());
+  let body: z.infer<typeof schema>;
+  try {
+    body = schema.parse(await req.json());
+  } catch (e) {
+    return handleZodError(e);
+  }
+
+  // The manager must belong to the admin's tenant.
+  const manager = await db.user.findFirst({
+    where: { id: body.managerId, role: "MANAGER", ...tenantWhere(ctx.user) },
+    select: { id: true },
+  });
+  if (!manager) return bad("Manager not found", 404);
 
   if (body.grant) {
     await db.managerGrant.upsert({

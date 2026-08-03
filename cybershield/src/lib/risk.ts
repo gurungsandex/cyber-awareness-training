@@ -26,14 +26,21 @@ export function nextRiskScore(current: number, delta: number) {
 /**
  * Apply a bounded delta to a user's risk score. Never throws — a failure to
  * update the risk score must not break the user-facing action that triggered it.
+ *
+ * The update is performed as a single atomic, clamped SQL statement rather than
+ * a read-modify-write. Two interactions landing at the same time (e.g. a click
+ * and a report processed concurrently) would otherwise both read the same
+ * starting score and the second write would clobber the first — a classic
+ * lost-update race. Computing the clamped value inside the UPDATE removes it.
  */
 export async function adjustRiskScore(userId: string, delta: number): Promise<void> {
   try {
-    const user = await db.user.findUnique({ where: { id: userId }, select: { riskScore: true } });
-    if (!user) return;
-    const next = nextRiskScore(user.riskScore, delta);
-    if (next === user.riskScore) return;
-    await db.user.update({ where: { id: userId }, data: { riskScore: next } });
+    await db.$executeRaw`
+      UPDATE "User"
+      SET "riskScore" = GREATEST(0, LEAST(100, "riskScore" + ${delta})),
+          "updatedAt" = NOW()
+      WHERE "id" = ${userId}
+    `;
   } catch {
     // non-fatal
   }

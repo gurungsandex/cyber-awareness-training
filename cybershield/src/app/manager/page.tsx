@@ -16,9 +16,10 @@ export default async function ManagerDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const senderId = session.user.id!;
+  const tenantId = (session.user as any).tenantId ?? null;
 
   const users = await db.user.findMany({
-    where: { deletedAt: null, role: "EMPLOYEE" },
+    where: { deletedAt: null, role: "EMPLOYEE", tenantId },
     include: {
       department: { select: { name: true } },
       enrollments: {

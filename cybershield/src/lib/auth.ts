@@ -3,6 +3,11 @@ import Credentials from "next-auth/providers/credentials";
 import { db } from "./db";
 import bcrypt from "bcryptjs";
 
+// A fixed, valid bcrypt digest compared against when no account matches, so the
+// failure path takes the same time as a real wrong-password check. It is not a
+// secret and matches no real password.
+const DUMMY_HASH = "$2a$12$d1rUu.E4ph3vuCSj3tzm5O5RKZVcDXp2.7gJhqViQy8LEtBGSyoeK";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   providers: [
@@ -16,13 +21,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await db.user.findUnique({
           where: { email: credentials.email as string },
         });
-        if (!user) return null;
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        );
-        if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name, role: user.role };
+        // Always run a bcrypt comparison, even when the user doesn't exist, so a
+        // missing account and a wrong password take the same amount of time.
+        // Otherwise the fast "no such user" path is a user-enumeration oracle.
+        const hash = user?.passwordHash ?? DUMMY_HASH;
+        const valid = await bcrypt.compare(credentials.password as string, hash);
+        if (!user || !valid) return null;
+        // Deleted (soft-deleted) accounts must not be able to authenticate.
+        if (user.deletedAt) return null;
+        return { id: user.id, email: user.email, name: user.name, role: user.role, tenantId: user.tenantId };
       },
     }),
   ],
@@ -31,6 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.tenantId = (user as any).tenantId ?? null;
       }
       return token;
     },
@@ -38,6 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         (session.user as any).role = token.role;
+        session.user.tenantId = (token.tenantId as string | null) ?? null;
       }
       return session;
     },

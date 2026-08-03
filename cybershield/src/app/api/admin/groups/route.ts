@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -13,6 +13,7 @@ export async function GET() {
   if ("status" in ctx) return ctx;
 
   const departments = await db.department.findMany({
+    where: tenantWhere(ctx.user),
     include: { _count: { select: { users: true } } },
     orderBy: { name: "asc" },
   });
@@ -24,13 +25,19 @@ export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
-  const body = createSchema.parse(await req.json());
+  let body: z.infer<typeof createSchema>;
+  try {
+    body = createSchema.parse(await req.json());
+  } catch (e) {
+    return handleZodError(e);
+  }
 
-  const existing = await db.department.findFirst({ where: { name: body.name, tenantId: null } });
+  const tenantId = ctx.user.tenantId ?? null;
+  const existing = await db.department.findFirst({ where: { name: body.name, tenantId } });
   if (existing) return bad("A group with this name already exists.");
 
   const dept = await db.department.create({
-    data: { name: body.name, description: body.description },
+    data: { name: body.name, description: body.description, tenantId },
   });
 
   await audit(ctx.user.id, "GROUP_CREATE", "Department", dept.id, { name: body.name });

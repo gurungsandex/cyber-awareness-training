@@ -8,9 +8,10 @@ export default async function ManagerGrantsPage() {
   const session = await auth();
   if (!session?.user || (session.user as any).role !== "ADMIN") redirect("/");
 
+  const tenantId = (session.user as any).tenantId ?? null;
   const [managers, courses] = await Promise.all([
     db.user.findMany({
-      where: { role: "MANAGER", deletedAt: null },
+      where: { role: "MANAGER", deletedAt: null, tenantId },
       include: {
         department: { select: { name: true } },
         managerGrants: { select: { courseId: true } },

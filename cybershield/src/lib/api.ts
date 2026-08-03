@@ -25,9 +25,26 @@ export async function requireRole(role: "ADMIN" | "MANAGER") {
   return ctx;
 }
 
+/**
+ * Tenant-scoping filter for tenant-owned models (User, Department, Campaign, …).
+ * Matches the caller's own tenant, including the legacy `null` tenant for
+ * deployments that predate tenant assignment. Shared content (courses,
+ * templates) and per-user data (enrollments, notifications — already bounded by
+ * userId) are intentionally not scoped through this.
+ */
+export function tenantWhere(user: { tenantId?: string | null }) {
+  return { tenantId: user.tenantId ?? null };
+}
+
 export function handleZodError(e: unknown) {
   if (e instanceof ZodError) {
     return bad(e.errors.map((x) => x.message).join(", "));
+  }
+  // A malformed / empty JSON body surfaces as a SyntaxError from req.json().
+  // That's a client error (400), not a server fault — don't return a 500 with a
+  // stack for it.
+  if (e instanceof SyntaxError) {
+    return bad("Invalid JSON body");
   }
   console.error(e);
   return bad("Internal server error", 500);

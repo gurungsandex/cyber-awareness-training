@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, audit, tenantWhere } from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const dueAt = new Date();
   dueAt.setDate(dueAt.getDate() + body.dueInDays);
 
-  // Build user filter
-  const userWhere: any = { deletedAt: null };
+  // Build user filter (always scoped to the admin's tenant)
+  const userWhere: any = { deletedAt: null, ...tenantWhere(ctx.user) };
   if (body.target === "DEPARTMENT" && body.departmentId) {
     userWhere.departmentId = body.departmentId;
   } else if (body.target === "ROLE" && body.role) {

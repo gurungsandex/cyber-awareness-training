@@ -8,10 +8,16 @@ export default auth((req) => {
     || nextUrl.pathname.startsWith("/register")
     || nextUrl.pathname.startsWith("/api/register")
     || nextUrl.pathname.startsWith("/api/auth")
+    || nextUrl.pathname === "/api/health"
     || nextUrl.pathname.startsWith("/_next")
     || nextUrl.pathname === "/";
 
   if (!session && !isPublic) {
+    // API routes must answer with a JSON 401, not a 302 to the HTML login page —
+    // a redirect makes client-side fetch().json() calls fail on unparseable HTML.
+    if (nextUrl.pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const url = new URL("/login", nextUrl);
     url.searchParams.set("from", nextUrl.pathname);
     return NextResponse.redirect(url);
