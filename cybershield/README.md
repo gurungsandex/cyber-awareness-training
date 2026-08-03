@@ -128,6 +128,38 @@ cybershield/
 
 ---
 
+## ⚙️ Configuration reference
+
+All configuration is via environment variables. Copy `.env.example` to `.env`
+and fill in values — **never commit a real `.env`** (it is git-ignored).
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | ✅ | — | PostgreSQL connection string. Host is `postgres` under docker-compose, `localhost` for host-installed Postgres. |
+| `NEXTAUTH_SECRET` | ✅ | — | Secret used to sign JWT sessions. Generate with `openssl rand -base64 32`. |
+| `NEXTAUTH_URL` | ✅ (prod) | `http://localhost:3000` | Public URL the app is served from; used for auth callbacks. |
+| `REDIS_HOST` | ✅ (workers) | `localhost` | Redis host for BullMQ. `redis` under docker-compose. |
+| `REDIS_PORT` | ✅ (workers) | `6379` | Redis port. |
+| `LOG_LEVEL` | ❌ | `info` (prod) / `debug` | Minimum level emitted by the structured logger: `debug`\|`info`\|`warn`\|`error`. |
+| `SEED_ADMIN_EMAIL` | ❌ | `admin@cybershield.local` | Overrides the seeded admin email. |
+| `SEED_ADMIN_PASSWORD` | ❌ | `ChangeMe!2026` | Overrides the seeded admin password. Set before seeding prod. |
+| `DB_PASSWORD` | ❌ (compose) | `cybershield_change_me` | Postgres password used by docker-compose. |
+| `ANTHROPIC_API_KEY` | ❌ | — | Reserved for the planned Phase 8 AI features. The app runs fully without it. |
+
+## 🩺 Health & observability
+
+- **Health check:** `GET /api/health` (no auth required). Returns `200` with
+  `{ status, checks: { database, redis }, uptime }` when the database is
+  reachable, or `503` when it is not. Redis being down reports `"degraded"` but
+  still returns `200`, since the web tier serves without it. The docker-compose
+  `web` service is wired to this endpoint and nginx waits for it to pass.
+- **Structured logs:** the app and workers emit one JSON object per line
+  (`level`, `time`, `message`, plus fields) for easy ingestion by log
+  aggregators. Control verbosity with `LOG_LEVEL`.
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for a full production install,
+verification, rollback, and troubleshooting guide.
+
 ## 🧪 Useful scripts
 
 ```bash
