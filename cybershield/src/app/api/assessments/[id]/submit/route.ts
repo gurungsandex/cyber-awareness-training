@@ -15,6 +15,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     if (!assessment) return bad("Assessment not found", 404);
 
+    // Idempotency guard: once a user has passed this assessment, further
+    // submissions must be inert. Without this, re-submitting a passing set of
+    // answers would mint a fresh certificate and shave another 5 points off the
+    // risk score every time — an easy way to farm a perfect risk profile.
+    // Retaking after a *failed* attempt is still allowed.
+    const priorPass = await db.assessmentAttempt.findFirst({
+      where: { assessmentId: assessment.id, userId: ctx.user.id, passed: true },
+      orderBy: { submittedAt: "desc" },
+    });
+    if (priorPass) {
+      return ok({
+        attemptId: priorPass.id,
+        scorePct: priorPass.scorePct,
+        passed: true,
+        passMark: assessment.passMark,
+        alreadyPassed: true,
+      });
+    }
+
     // Score server-side
     let correctCount = 0;
     const detailed = body.answers.map(a => {
