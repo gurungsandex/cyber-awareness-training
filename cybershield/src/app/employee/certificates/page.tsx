@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Trophy, Download } from "lucide-react";
 import { CertificateCard } from "@/components/CertificateCard";
 import { PrintCertButton } from "./PrintCertButton";
 
@@ -11,6 +11,7 @@ export default async function CertificatesPage() {
 
   const certs = await db.certificate.findMany({
     where: { userId: session.user.id },
+    select: { id: true, courseTitle: true, issuedAt: true, verifyCode: true, pdfPath: true },
     orderBy: { issuedAt: "desc" },
   });
 
@@ -45,6 +46,15 @@ export default async function CertificatesPage() {
               <p className="text-xs text-text-muted flex-1">
                 Verify at <span className="font-mono text-text-secondary">/verify/{c.verifyCode}</span>
               </p>
+              {c.pdfPath && (
+                <a
+                  href={`/api/certificates/${c.id}`}
+                  className="inline-flex items-center gap-2 h-7 rounded-md px-3 text-xs font-medium border border-border bg-transparent hover:bg-elevated text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                  Download PDF
+                </a>
+              )}
               <PrintCertButton verifyCode={c.verifyCode} courseTitle={c.courseTitle} />
             </div>
           </div>

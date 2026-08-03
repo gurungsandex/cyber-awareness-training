@@ -31,6 +31,10 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Pre-create the private certificate store so the mounted volume inherits the
+# app user's ownership (certificates live here, never under public/).
+RUN mkdir -p /app/storage/certificates && chown -R nextjs:nodejs /app/storage
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

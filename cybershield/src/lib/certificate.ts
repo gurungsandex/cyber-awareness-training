@@ -5,6 +5,17 @@ import { db } from "./db";
 import crypto from "crypto";
 
 /**
+ * Directory certificate PDFs are written to. It is deliberately OUTSIDE the
+ * Next.js `public/` tree — files under `public/` are served statically to
+ * anyone who knows the URL, whereas certificates are personal documents. They
+ * are handed out only via the ownership-checked `/api/certificates/[id]` route.
+ * Override the location with CERT_STORAGE_DIR (e.g. a mounted volume).
+ */
+export function certStorageDir(): string {
+  return process.env.CERT_STORAGE_DIR || path.join(process.cwd(), "storage", "certificates");
+}
+
+/**
  * Certificates render with pdf-lib's standard Helvetica, which uses WinAnsi
  * (CP1252) encoding and throws on any character it can't encode — CJK, emoji,
  * and many accented letters. Names come from self-registration and can contain
@@ -62,7 +73,7 @@ export async function generateCertificatePdf(attemptId: string): Promise<string>
   });
 
   const pdfBytes = await pdfDoc.save();
-  const dir = path.join(process.cwd(), "public", "certificates");
+  const dir = certStorageDir();
   await fs.mkdir(dir, { recursive: true });
   const filename = `cert-${attemptId}.pdf`;
   const filePath = path.join(dir, filename);
@@ -73,10 +84,12 @@ export async function generateCertificatePdf(attemptId: string): Promise<string>
       userId: attempt.userId,
       attemptId: attempt.id,
       courseTitle: attempt.assessment.course.title,
-      pdfPath: `/certificates/${filename}`,
+      // Store the bare filename; the file is served via the authenticated
+      // /api/certificates/[id] route, never as a public URL.
+      pdfPath: filename,
       verifyCode,
     },
   });
 
-  return `/certificates/${filename}`;
+  return filePath;
 }

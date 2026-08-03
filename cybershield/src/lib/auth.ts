@@ -18,17 +18,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const user = await db.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        const email = credentials.email as string;
+
+        // Loaded dynamically so ioredis never lands in the Edge middleware
+        // bundle (this file is imported by middleware). Throttle repeated
+        // failures per email; fails open if Redis is down.
+        const { isLoginRateLimited, recordLoginFailure, clearLoginFailures } = await import("./rate-limit");
+        if (await isLoginRateLimited(email)) return null;
+
+        const user = await db.user.findUnique({ where: { email } });
         // Always run a bcrypt comparison, even when the user doesn't exist, so a
         // missing account and a wrong password take the same amount of time.
         // Otherwise the fast "no such user" path is a user-enumeration oracle.
         const hash = user?.passwordHash ?? DUMMY_HASH;
         const valid = await bcrypt.compare(credentials.password as string, hash);
-        if (!user || !valid) return null;
         // Deleted (soft-deleted) accounts must not be able to authenticate.
-        if (user.deletedAt) return null;
+        if (!user || !valid || user.deletedAt) {
+          await recordLoginFailure(email);
+          return null;
+        }
+        await clearLoginFailures(email);
         return { id: user.id, email: user.email, name: user.name, role: user.role, tenantId: user.tenantId };
       },
     }),
