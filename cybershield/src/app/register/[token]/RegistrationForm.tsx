@@ -69,14 +69,15 @@ export function RegistrationForm({ token, departments }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-3 text-sm text-danger">
+        <div role="alert" className="rounded-lg border border-danger/20 bg-danger/5 px-4 py-3 text-sm text-danger">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Full Name</label>
+        <label htmlFor="reg-name" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Full Name</label>
         <Input
+          id="reg-name"
           required
           placeholder="Jane Smith"
           value={name}
@@ -86,8 +87,9 @@ export function RegistrationForm({ token, departments }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Work Email</label>
+        <label htmlFor="reg-email" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Work Email</label>
         <Input
+          id="reg-email"
           required
           type="email"
           placeholder="jane.smith@company.com"
@@ -98,8 +100,9 @@ export function RegistrationForm({ token, departments }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Job Title</label>
+        <label htmlFor="reg-jobtitle" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Job Title</label>
         <Input
+          id="reg-jobtitle"
           required
           placeholder="e.g. Finance Analyst"
           value={jobTitle}
@@ -108,11 +111,12 @@ export function RegistrationForm({ token, departments }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Department</label>
+        <label htmlFor="reg-department" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Department</label>
         {departments.length === 0 ? (
           <p className="text-sm text-text-muted italic">No departments configured yet. Please contact your administrator.</p>
         ) : (
           <select
+            id="reg-department"
             required
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
@@ -127,30 +131,34 @@ export function RegistrationForm({ token, departments }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
+        <label htmlFor="reg-password" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
         <Input
+          id="reg-password"
           required
           type="password"
           placeholder="Minimum 8 characters"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
+          aria-invalid={!!error}
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Confirm Password</label>
+        <label htmlFor="reg-confirm" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Confirm Password</label>
         <Input
+          id="reg-confirm"
           required
           type="password"
           placeholder="Repeat your password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           autoComplete="new-password"
+          aria-invalid={!!error}
         />
       </div>
 
-      <Button type="submit" disabled={loading || departments.length === 0} className="w-full mt-2">
+      <Button type="submit" disabled={loading || departments.length === 0} className="w-full mt-2" aria-busy={loading}>
         {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating account…</> : "Create account"}
       </Button>
     </form>

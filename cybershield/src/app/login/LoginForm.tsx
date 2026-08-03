@@ -45,7 +45,7 @@ export function LoginForm() {
         <h2 className="text-lg font-heading font-semibold text-text-primary mb-6">Sign in to your account</h2>
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger">
+          <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             {error}
           </div>
@@ -53,10 +53,11 @@ export function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Email</label>
+            <label htmlFor="login-email" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" aria-hidden="true" />
               <Input
+                id="login-email"
                 type="email"
                 placeholder="you@company.com"
                 value={email}
@@ -64,14 +65,16 @@ export function LoginForm() {
                 className="pl-10"
                 required
                 autoComplete="email"
+                aria-invalid={!!error}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
+            <label htmlFor="login-password" className="block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" aria-hidden="true" />
               <Input
+                id="login-password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
@@ -79,20 +82,23 @@ export function LoginForm() {
                 className="pl-10"
                 required
                 autoComplete="current-password"
+                aria-invalid={!!error}
               />
             </div>
           </div>
-          <Button type="submit" className="w-full mt-2" disabled={loading}>
+          <Button type="submit" className="w-full mt-2" disabled={loading} aria-busy={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-elevated border border-border p-4 text-xs text-text-muted space-y-1">
-          <p className="font-medium text-text-secondary">Demo accounts</p>
-          <p className="font-mono">admin@cybershield.local / ChangeMe!2026</p>
-          <p className="font-mono">manager@cybershield.local / Manager!2026</p>
-          <p className="font-mono">alice.chen@cybershield.local / Employee!2026</p>
-        </div>
+        {process.env.NODE_ENV !== "production" && (
+          <div className="mt-6 rounded-lg bg-elevated border border-border p-4 text-xs text-text-muted space-y-1">
+            <p className="font-medium text-text-secondary">Demo accounts</p>
+            <p className="font-mono">admin@cybershield.local / ChangeMe!2026</p>
+            <p className="font-mono">manager@cybershield.local / Manager!2026</p>
+            <p className="font-mono">alice.chen@cybershield.local / Employee!2026</p>
+          </div>
+        )}
       </div>
     </div>
   );
