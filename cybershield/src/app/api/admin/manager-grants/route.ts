@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit } from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -29,7 +29,12 @@ export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
-  const body = schema.parse(await req.json());
+  let body: z.infer<typeof schema>;
+  try {
+    body = schema.parse(await req.json());
+  } catch (e) {
+    return handleZodError(e);
+  }
 
   if (body.grant) {
     await db.managerGrant.upsert({

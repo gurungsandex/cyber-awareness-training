@@ -29,6 +29,12 @@ export function handleZodError(e: unknown) {
   if (e instanceof ZodError) {
     return bad(e.errors.map((x) => x.message).join(", "));
   }
+  // A malformed / empty JSON body surfaces as a SyntaxError from req.json().
+  // That's a client error (400), not a server fault — don't return a 500 with a
+  // stack for it.
+  if (e instanceof SyntaxError) {
+    return bad("Invalid JSON body");
+  }
   console.error(e);
   return bad("Internal server error", 500);
 }

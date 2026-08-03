@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit } from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -24,7 +24,12 @@ export async function POST(req: NextRequest) {
   const ctx = await requireRole("ADMIN");
   if ("status" in ctx) return ctx;
 
-  const body = createSchema.parse(await req.json());
+  let body: z.infer<typeof createSchema>;
+  try {
+    body = createSchema.parse(await req.json());
+  } catch (e) {
+    return handleZodError(e);
+  }
 
   const existing = await db.department.findFirst({ where: { name: body.name, tenantId: null } });
   if (existing) return bad("A group with this name already exists.");

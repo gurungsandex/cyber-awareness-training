@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ok, bad, requireRole, audit } from "@/lib/api";
+import { ok, bad, requireRole, handleZodError, audit } from "@/lib/api";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -15,7 +15,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const dept = await db.department.findUnique({ where: { id: params.id } });
   if (!dept) return bad("Group not found", 404);
 
-  const body = updateSchema.parse(await req.json());
+  let body: z.infer<typeof updateSchema>;
+  try {
+    body = updateSchema.parse(await req.json());
+  } catch (e) {
+    return handleZodError(e);
+  }
   const updated = await db.department.update({ where: { id: params.id }, data: body });
 
   await audit(ctx.user.id, "GROUP_UPDATE", "Department", params.id, body);

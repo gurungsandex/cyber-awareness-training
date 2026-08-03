@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { z } from "zod";
+
+const nudgeSchema = z.object({
+  targetUserId: z.string().min(1, "targetUserId required"),
+  enrollmentId: z.string().optional(),
+  nudgeType: z.string().max(40).default("REMINDER"),
+  message: z.string().max(500).optional(),
+});
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -8,8 +16,13 @@ export async function POST(req: NextRequest) {
   const role = (session.user as any).role;
   if (!["ADMIN", "MANAGER"].includes(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { targetUserId, enrollmentId, nudgeType = "REMINDER", message } = await req.json();
-  if (!targetUserId) return NextResponse.json({ error: "targetUserId required" }, { status: 400 });
+  let parsed;
+  try {
+    parsed = nudgeSchema.parse(await req.json());
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  const { targetUserId, enrollmentId, nudgeType, message } = parsed;
 
   const senderId = session.user.id!;
 
